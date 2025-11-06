@@ -126,6 +126,42 @@ class Post
 		}
 
 		$data['plain_text'] = $data['text'];
+		$emoji_map = [
+    	    ':smile:'        => '😄',
+    		':laugh:'        => '😂',
+    		':wink:'         => '😉',
+    		':heart:'        => '❤️',
+			':broken_heart:' => '💔',
+			':fire:'         => '🔥',
+			':star:'         => '⭐',
+			':check:'        => '✅',
+			':cross:'        => '❌',
+			':thumbs_up:'    => '👍',
+			':thumbs_down:'  => '👎',
+			':clap:'         => '👏',
+			':party:'        => '🥳',
+			':thinking:'     => '🤔',
+			':sweat:'        => '😅',
+			':cry:'          => '😢',
+			':sleep:'        => '😴',
+			':rocket:'       => '🚀',
+			':zap:'          => '⚡',
+			':warning:'      => '⚠️',
+			':tada:'         => '🎉',
+			':coffee:'       => '☕',
+			':cake:'         => '🍰',
+			':sun:'          => '☀️',
+			':moon:'         => '🌙',
+			':cloud:'        => '☁️',
+			':rainbow:'      => '🌈',
+			':flower:'       => '🌸',
+			':dog:'          => '🐶',
+			':cat:'          => '🐱',
+		];
+		foreach($emoji_map as $code => $emoji){
+		    $data['text'] = str_replace($code, $emoji, $data['text']);
+	}
+
 		$data['text'] = self::parse_content($data['text']);
 		$data['datetime'] = 'NOW()';
 		$data['status'] = '1';
@@ -144,6 +180,42 @@ class Post
 		$data = self::raw_data($r);
 
 		$data['plain_text'] = $data['text'];
+		$emoji_map = [
+			':smile:'        => '😄',
+			':laugh:'        => '😂',
+			':wink:'         => '😉',
+			':heart:'        => '❤️',
+			':broken_heart:' => '💔',
+			':fire:'         => '🔥',
+			':star:'         => '⭐',
+			':check:'        => '✅',
+			':cross:'        => '❌',
+			':thumbs_up:'    => '👍',
+			':thumbs_down:'  => '👎',
+			':clap:'         => '👏',
+			':party:'        => '🥳',
+			':thinking:'     => '🤔',
+			':sweat:'        => '😅',
+			':cry:'          => '😢',
+			':sleep:'        => '😴',
+			':rocket:'       => '🚀',
+			':zap:'          => '⚡',
+			':warning:'      => '⚠️',
+			':tada:'         => '🎉',
+			':coffee:'       => '☕',
+			':cake:'         => '🍰',
+			':sun:'          => '☀️',
+			':moon:'         => '🌙',
+			':cloud:'        => '☁️',
+			':rainbow:'      => '🌈',
+			':flower:'       => '🌸',
+			':dog:'          => '🐶',
+			':cat:'          => '🐱',	
+		];
+		foreach($emoji_map as $code => $emoji){
+    	$data['text'] = str_replace($code, $emoji, $data['text']);
+	}
+
 		$data['text'] = self::parse_content($data['text']);
 
 		DB::get_instance()->update('posts', $data, "WHERE `id` = ? AND `status` <> 5", $r["id"]);
@@ -177,16 +249,17 @@ class Post
 		return true;
 	}
 
-    public static function delete($r){
-       self::login_protected();
+	public static function delete($r){
+    self::login_protected();
 
-       DB::get_instance()->query("
-           DELETE FROM `posts`
-           WHERE `id` = ?
+    DB::get_instance()->query("
+        DELETE FROM `posts`
+        WHERE `id` = ?
     ", $r["id"]);
 
     return true;
 }
+
 
 	public static function edit_data($r){
 		self::login_protected();
