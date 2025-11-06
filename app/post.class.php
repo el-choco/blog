@@ -177,16 +177,16 @@ class Post
 		return true;
 	}
 
-	public static function delete($r){
-		self::login_protected();
+    public static function delete($r){
+       self::login_protected();
 
-		DB::get_instance()->query("
-			UPDATE `posts`
-			SET `status` = 5
-			WHERE `id` = ?
-		", $r["id"]);
-		return true;
-	}
+       DB::get_instance()->query("
+           DELETE FROM `posts`
+           WHERE `id` = ?
+    ", $r["id"]);
+
+    return true;
+}
 
 	public static function edit_data($r){
 		self::login_protected();
