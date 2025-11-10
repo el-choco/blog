@@ -14,8 +14,6 @@ function escape($str) {
 	return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
 }
 
-//$.ajaxSetup({headers:{'Csrf-Token':'token'}});
-
 Log::put("visitors");
 
 $hours = '';
@@ -84,8 +82,44 @@ if (Config::get_safe("version", false)) {
 	<link href="https://fonts.googleapis.com/css?family=Open+Sans&amp;subset=all" rel="stylesheet">
 
 	<link href="static/styles/lightbox.css" rel="stylesheet" type="text/css" />
-	<?php echo Config::get_safe("highlight", false) ? '<link href="static/styles/highlight-monokai-sublime.css" rel="stylesheet" type="text/css" />'.PHP_EOL : ''; ?>
 
+	<link href="static/styles/sticky_posts.css<?php echo $versionSuffix?>" rel="stylesheet" type="text/css" />
+
+	<?php echo Config::get_safe("highlight", false) ? '<link href="static/styles/highlight-monokai-sublime.css" rel="stylesheet" type="text/css" />'.PHP_EOL : ''; ?>
+	<style>
+	#emojiPicker {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-around;
+		gap: 4px;
+		padding: 6px;
+		border-radius: 8px;
+		background: #f8f8f8;
+		border: 1px solid #ddd;
+		font-size: 22px;
+		margin-top: 8px;
+	}
+	#emojiPicker .emoji {
+		cursor: pointer;
+		transition: transform 0.1s;
+		user-select: none;
+		padding: 4px;
+	}
+	#emojiPicker .emoji:hover {
+		transform: scale(1.3);
+		background: #e8e8e8;
+		border-radius: 4px;
+	}
+	#emojiPicker .emoji:active {
+		transform: scale(1.1);
+	}
+	textarea.e_text, textarea#postText {
+    height: 300px !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    resize: none !important; /* Kein Resize, dafür scrollen */
+}
+	</style>
 	<?php echo $styles_html; ?>
 </head>
 <body>
@@ -163,12 +197,15 @@ if (Config::get_safe("version", false)) {
 			<li><a class="edit_post"><?php echo __("Edit Post"); ?></a></li>
 			<li><a class="edit_date"><?php echo __("Change Date"); ?></a></li>
 			<li>
+				<a class="sticky_post">📌 Als Sticky markieren</a>
+				<a class="unsticky_post">📌 Sticky entfernen</a>
+			</li>
+			<li>
 				<a class="hide"><?php echo __("Hide from Timeline"); ?></a>
 				<a class="show"><?php echo __("Show on Timeline"); ?></a>
 			</li>
 			<li><a class="delete_post"><?php echo __("Delete Post"); ?></a></li>
 		</ul>
-
 		<!-- Edit Modal -->
 		<div class="modal edit_modal">
 			<div class="modal-dialog">
@@ -182,10 +219,98 @@ if (Config::get_safe("version", false)) {
 							<div class="e_drag"><span><?php echo __("Drag photos here"); ?></span></div>
 							<div class="e_drop"><span><?php echo __("Drop photos here"); ?></span></div>
 							<img src="<?php echo escape(Config::get("pic_small")); ?>" width="40" height="40" class="e_profile">
-							<!--<div class="e_text" contenteditable="true"></div>-->
-							<div class="t_area">
-								<textarea class="e_text" placeholder="<?php echo __("What's on your mind?"); ?>"></textarea>
-							</div>
+<div class="t_area">
+	<textarea id="postText" class="e_text" placeholder="<?php echo __("What's on your mind?"); ?>"></textarea>
+</div>
+
+<!-- BBCode Toolbar -->
+<div style="display:flex; justify-content: center; gap:6px; padding:8px 0; flex-wrap:wrap; border: 1px solid #dfdfdf; margin-bottom: 8px;border-radius: 15px;">
+	<!-- Text Formatierung -->
+	<button type="button" class="bbcode-btn" data-tag="b" title="Fett" style="font-weight:bold; padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">B</button>
+	<button type="button" class="bbcode-btn" data-tag="i" title="Kursiv" style="font-style:italic; padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">I</button>
+	<button type="button" class="bbcode-btn" data-tag="u" title="Unterstrichen" style="text-decoration:underline; padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">U</button>
+	<button type="button" class="bbcode-btn" data-tag="s" title="Durchgestrichen" style="text-decoration:line-through; padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:310px;">S</button>
+	
+	<span style="border-right: 1px solid #ddd; margin: 0 4px;"></span>
+	
+	<!-- Farbe & Größe -->
+	<button type="button" class="bbcode-btn" data-tag="color" title="Farbe" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">🎨</button>
+	<button type="button" class="bbcode-btn" data-tag="size" title="Größe" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">📏</button>
+	<button type="button" class="bbcode-btn" data-tag="highlight" title="Markieren" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">✨</button>
+	
+	<span style="border-right: 1px solid #ddd; margin: 0 4px;"></span>
+	
+	<!-- Ausrichtung -->
+	<button type="button" class="bbcode-btn" data-tag="left" title="Linksbündig" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">⬅️</button>
+	<button type="button" class="bbcode-btn" data-tag="center" title="Zentriert" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">⬆️</button>
+	<button type="button" class="bbcode-btn" data-tag="right" title="Rechtsbündig" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">➡️</button>
+	
+	<span style="border-right: 1px solid #ddd; margin: 0 4px;"></span>
+	
+	<!-- Struktur -->
+	<button type="button" class="bbcode-btn" data-tag="quote" title="Zitat" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">💬</button>
+	<button type="button" class="bbcode-btn" data-tag="code" title="Code" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px; font-family: monospace;">{ }</button>
+	<button type="button" class="bbcode-btn" data-tag="php" title="PHP Code" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px; font-family: monospace;">PHP</button>
+	<button type="button" class="bbcode-btn" data-tag="spoiler" title="Spoiler" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">👁️</button>
+	<button type="button" class="bbcode-btn" data-tag="list" title="Liste" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">📋</button>
+	<button type="button" class="bbcode-btn" data-tag="hr" title="Linie" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">━</button>
+	
+	<span style="border-right: 1px solid #ddd; margin: 0 4px;"></span>
+	
+	<!-- Links & Medien -->
+	<button type="button" class="bbcode-btn" data-tag="url" title="Link" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">🔗</button>
+	<button type="button" class="bbcode-btn" data-tag="img" title="Bild" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">🖼️</button>
+	<button type="button" class="bbcode-btn" data-tag="email" title="E-Mail" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">📧</button>
+						</div>
+						<!-- Emoji Picker -->
+						<!-- Emoji Picker mit 44 modernen Emojis -->
+						<div id="emojiPicker" style="display:flex; flex-wrap:wrap; justify-content: space-around; gap:4px; padding:6px; border-radius:8px; background:#f8f8f8; border:1px solid #ddd; font-size:22px;">
+							<!-- Gesichter & Emotionen -->
+							<span class="emoji" data-emoji="😀">😀</span>
+							<span class="emoji" data-emoji="😃">😃</span>
+							<span class="emoji" data-emoji="😄">😄</span>
+							<span class="emoji" data-emoji="😁">😁</span>
+							<span class="emoji" data-emoji="😆">😆</span>
+							<span class="emoji" data-emoji="😂">😂</span>
+							<span class="emoji" data-emoji="🤣">🤣</span>
+							<span class="emoji" data-emoji="😊">😊</span>
+							<span class="emoji" data-emoji="😇">😇</span>
+							<span class="emoji" data-emoji="😍">😍</span>
+							<span class="emoji" data-emoji="🥰">🥰</span>
+							<span class="emoji" data-emoji="😘">😘</span>
+							<span class="emoji" data-emoji="😗">😗</span>
+							<span class="emoji" data-emoji="😎">😎</span>
+							<span class="emoji" data-emoji="🤩">🤩</span>
+							<span class="emoji" data-emoji="🤗">🤗</span>
+							<span class="emoji" data-emoji="🤔">🤔</span>
+							<span class="emoji" data-emoji="😐">😐</span>
+							<span class="emoji" data-emoji="😑">😑</span>
+							<span class="emoji" data-emoji="😶">😶</span>
+							<span class="emoji" data-emoji="🙄">🙄</span>
+							<span class="emoji" data-emoji="😏">😏</span>
+							<span class="emoji" data-emoji="😣">😣</span>
+							<span class="emoji" data-emoji="😥">😥</span>
+							<span class="emoji" data-emoji="😮">😮</span>
+							<span class="emoji" data-emoji="🤐">🤐</span>
+							<span class="emoji" data-emoji="😯">😯</span>
+							<span class="emoji" data-emoji="😪">😪</span>
+							<span class="emoji" data-emoji="😫">😫</span>
+							<span class="emoji" data-emoji="🥱">🥱</span>
+							<span class="emoji" data-emoji="😴">😴</span>
+							<span class="emoji" data-emoji="😌">😌</span>
+							<span class="emoji" data-emoji="😛">😛</span>
+							<span class="emoji" data-emoji="😜">😜</span>
+							<span class="emoji" data-emoji="😝">😝</span>
+							<span class="emoji" data-emoji="🤤">🤤</span>
+							<span class="emoji" data-emoji="😒">😒</span>
+							<span class="emoji" data-emoji="😓">😓</span>
+							<span class="emoji" data-emoji="😔">😔</span>
+							<span class="emoji" data-emoji="😕">😕</span>
+							<span class="emoji" data-emoji="🙃">🙃</span>
+							<span class="emoji" data-emoji="🫠">🫠</span>
+							<span class="emoji" data-emoji="🤑">🤑</span>
+							<span class="emoji" data-emoji="😲">😲</span>
+						</div>
 						</div>
 						<div class="e_loading">
 							<span class="e_dots"></span>
@@ -350,10 +475,186 @@ if (Config::get_safe("version", false)) {
 
 	<script src="static/scripts/lightbox.js"></script>
 	<script src="static/scripts/datepick.js<?php echo $versionSuffix?>"></script>
-	<script src="static/scripts/autosize.js"></script>
+	<!-- <script src="static/scripts/autosize.js"></script>-->
 	<?php echo Config::get_safe("highlight", false) ? '<script src="static/scripts/highlight-10.1.2.min.js"></script><script>hljs.initHighlightingOnLoad();</script>'.PHP_EOL : ''; ?>
-	<script src="static/scripts/app.js<?php echo $versionSuffix?>"></script>
-
+	<script src="static/scripts/app.js"></script>
 	<?php echo $scripts_html; ?>
+
+<script>
+// ============================================
+// BBCode & Emoji Editor Funktionalität
+// ============================================
+(function(){
+	'use strict';
+
+	// Helper: Finde die Textarea im aktuellen Kontext
+	function findTextarea(element) {
+		let scope = element.closest('.modal') || element.closest('.edit_form') || element.closest('.b_post') || document;
+		return scope.querySelector('textarea#postText') 
+			|| scope.querySelector('textarea.e_text') 
+			|| scope.querySelector('textarea')
+			|| document.querySelector('textarea#postText');
+	}
+
+	// Füge Text an Cursor-Position ein
+	function insertAtCursor(textarea, textBefore, textAfter) {
+		if (!textarea) return;
+		
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const text = textarea.value;
+		const selectedText = text.substring(start, end);
+		
+		const newText = text.substring(0, start) + textBefore + selectedText + textAfter + text.substring(end);
+		textarea.value = newText;
+		
+		// Setze Cursor-Position
+		const newPos = start + textBefore.length + selectedText.length;
+		textarea.selectionStart = textarea.selectionEnd = newPos;
+		textarea.focus();
+		
+		// Trigger Events für andere Scripts
+		textarea.dispatchEvent(new Event('input', { bubbles: true }));
+		textarea.dispatchEvent(new Event('change', { bubbles: true }));
+	}
+
+		// Emoji-Mapping: Emoji → BBCode Text-Code (44 Emojis)
+		const emojiToBBCode = {
+			'😀': ':grinning:',
+			'😃': ':smiley:',
+			'😄': ':smile:',
+			'😁': ':grin:',
+			'😆': ':laughing:',
+			'😂': ':joy:',
+			'🤣': ':rofl:',
+			'😊': ':blush:',
+			'😇': ':innocent:',
+			'😍': ':heart_eyes:',
+			'🥰': ':smiling_face_with_hearts:',
+			'😘': ':kissing_heart:',
+			'😗': ':kissing:',
+			'😎': ':sunglasses:',
+			'🤩': ':star_struck:',
+			'🤗': ':hugging:',
+			'🤔': ':thinking:',
+			'😐': ':neutral_face:',
+			'😑': ':expressionless:',
+			'😶': ':no_mouth:',
+			'🙄': ':eye_roll:',
+			'😏': ':smirk:',
+			'😣': ':persevere:',
+			'😥': ':disappointed_relieved:',
+			'😮': ':open_mouth:',
+			'🤐': ':zipper_mouth:',
+			'😯': ':hushed:',
+			'😪': ':sleepy:',
+			'😫': ':tired_face:',
+			'🥱': ':yawning:',
+			'😴': ':sleeping:',
+			'😌': ':relieved:',
+			'😛': ':stuck_out_tongue:',
+			'😜': ':stuck_out_tongue_winking_eye:',
+			'😝': ':stuck_out_tongue_closed_eyes:',
+			'🤤': ':drooling:',
+			'😒': ':unamused:',
+			'😓': ':sweat:',
+			'😔': ':pensive:',
+			'😕': ':confused:',
+			'🙃': ':upside_down:',
+			'🫠': ':melting:',
+			'🤑': ':money_mouth:',
+			'😲': ':astonished:'
+		};
+	// BBCode Button Handler
+	document.addEventListener('click', function(e) {
+		const btn = e.target.closest('.bbcode-btn');
+		if (!btn) return;
+		
+		e.preventDefault();
+		const tag = btn.getAttribute('data-tag');
+		const textarea = findTextarea(btn);
+		if (!textarea) return;
+
+		// Spezielle Handler für verschiedene Tags
+		switch(tag) {
+			case 'url':
+				const url = prompt('URL eingeben:');
+				if (url) insertAtCursor(textarea, '[url=' + url + ']', '[/url]');
+				break;
+			
+			case 'img':
+				const imgUrl = prompt('Bild-URL eingeben:');
+				if (imgUrl) insertAtCursor(textarea, '[img]' + imgUrl + '[/img]', '');
+				break;
+			
+			case 'email':
+				const email = prompt('E-Mail-Adresse eingeben:');
+				if (email) insertAtCursor(textarea, '[email]' + email + '[/email]', '');
+				break;
+			
+			case 'color':
+				const color = prompt('Farbe eingeben (z.B. red, #ff0000):', 'red');
+				if (color) insertAtCursor(textarea, '[color=' + color + ']', '[/color]');
+				break;
+			
+			case 'size':
+				const size = prompt('Schriftgröße eingeben (z.B. 20):', '16');
+				if (size) insertAtCursor(textarea, '[size=' + size + ']', '[/size]');
+				break;
+			
+			case 'font':
+				const font = prompt('Schriftart eingeben (z.B. Arial):', 'Arial');
+				if (font) insertAtCursor(textarea, '[font=' + font + ']', '[/font]');
+				break;
+			
+			case 'quote':
+				const author = prompt('Autor (optional):');
+				if (author !== null) {
+					if (author) {
+						insertAtCursor(textarea, '[quote=' + author + ']', '[/quote]');
+					} else {
+						insertAtCursor(textarea, '[quote]', '[/quote]');
+					}
+				}
+				break;
+			
+			case 'list':
+				insertAtCursor(textarea, '[list]\n[*] ', '\n[*] \n[/list]');
+				break;
+			
+			case 'hr':
+				insertAtCursor(textarea, '[hr]', '');
+				break;
+			
+			default:
+				insertAtCursor(textarea, '[' + tag + ']', '[/' + tag + ']');
+		}
+	});
+
+	// Emoji Click Handler
+	document.addEventListener('click', function(e) {
+		const emojiEl = e.target.closest('.emoji');
+		if (!emojiEl) return;
+		
+		e.preventDefault();
+		const emojiChar = emojiEl.getAttribute('data-emoji') || emojiEl.textContent;
+		const textarea = findTextarea(emojiEl);
+		if (!textarea) return;
+
+		// Konvertiere Emoji zu BBCode-Text
+		const bbcode = emojiToBBCode[emojiChar] || emojiChar;
+		insertAtCursor(textarea, bbcode, '');
+	});
+
+	// Verhindere Doppel-Klicks
+	document.addEventListener('dblclick', function(e) {
+		if (e.target.closest('.emoji') || e.target.closest('.bbcode-btn')) {
+			e.preventDefault();
+		}
+	});
+
+	console.log('✅ BBCode & Emoji Editor initialisiert');
+})();
+</script>
 </body>
 </html>
