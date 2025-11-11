@@ -5,7 +5,7 @@
 * **add Emojis**
 * **add Emoji Picker Bar**
 * **remove bbcode**
-* **add HTML for example  `<center>Text<center> `
+* **add HTML for example**  `<center>Text<center> `
 ---
 
 # blog
