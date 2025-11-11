@@ -5,6 +5,9 @@
 * **add Emojis**
 * **add Emoji Picker Bar**
 * **remove bbcode**
+---
+## Planned:
+* ** add HTML for example ' <center>Text<center> '
 
 # blog
 This is a simple self-hosted, lightweight, singe-user PHP blog, where you can create your own Facebook-like feed. Give read access to other people, and you can share rich text with photos including highlighted code or links.
