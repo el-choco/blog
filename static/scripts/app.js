@@ -598,9 +598,15 @@ $.fn.apply_edit = function(data){
 			*/
 		});
 
-		// Autoresize textarea
+		// Kein Autoresize - manuelles Resize erlauben
 		setTimeout(function(){
-			autosize($(modal.find(".e_text")));
+			var textarea = $(modal.find(".e_text"));
+			textarea.css({
+				'min-height': '120px',
+				'overflow-y': 'auto',
+				'resize': 'vertical',
+				'display': 'block'
+			});
 		},0);
 
 		// Upload image button
@@ -696,6 +702,16 @@ $.fn.post_fill = function(data){
 	if(parseInt(data.is_hidden)) {
 		post.addClass("is_hidden");
 	}
+	
+	// Sticky Post Handling
+	if(data.is_sticky && parseInt(data.is_sticky)) {
+		post.addClass("sticky");
+		post.attr("data-sticky", "1");
+	} else {
+		post.removeClass("sticky");
+		post.attr("data-sticky", "0");
+	}
+	
 	post.find(".b_overlay .button").click(function(){
 		var overlay = post.find(".b_overlay");
 		var elementTop = $(overlay).offset().top;
@@ -1045,6 +1061,61 @@ $.fn.apply_post = function(){
 				// Append modal
 				$("body").append(modal);
 			});
+
+			// Sticky Post Toggle Handler - NEU!
+			// Zeige/Verstecke Buttons basierend auf aktuellem Status
+			if(post.hasClass("sticky") || post.attr("data-sticky") === "1") {
+				$(o_mask).find(".sticky_post").hide();
+				$(o_mask).find(".unsticky_post").show();
+			} else {
+				$(o_mask).find(".sticky_post").show();
+				$(o_mask).find(".unsticky_post").hide();
+			}
+			
+			$(o_mask).find(".sticky_post, .unsticky_post").click(function(){
+				// Hide mask
+				$("#dd_mask").click();
+				
+				$.post({
+					dataType: "json",
+					url: "ajax.php",
+					data: {
+						action: "toggle_sticky",
+						id: post_id
+					},
+					success: function(data){
+						if(data.error){
+							$("body").error_msg(data.msg);
+							return;
+						}
+						
+						// Aktualisiere Post-Status
+						if(data.is_sticky){
+							post.addClass("sticky");
+							post.attr("data-sticky", "1");
+						} else {
+							post.removeClass("sticky");
+							post.attr("data-sticky", "0");
+						}
+						
+						// Success-Meldung
+						var msg = data.is_sticky ? "Post als Sticky markiert! 📌" : "Sticky entfernt.";
+						if(typeof $("body").success_msg === "function"){
+							$("body").success_msg(msg);
+						} else {
+							alert(msg);
+						}
+						
+						// Reload um Sortierung zu aktualisieren
+						setTimeout(function(){
+							posts.reload();
+						}, 800);
+					},
+					error: function(){
+						$("body").error_msg("Fehler beim Sticky-Toggle");
+					}
+				});
+			});
 		});
 	});
 };
@@ -1106,3 +1177,13 @@ $(document).on('dragover', function(e) {
 $(window)
 .on("scroll resize touchmove", posts.tryload)
 .on("hashchange", posts.hash_update);
+
+
+// Success message helper
+if(!$.fn.success_msg){
+	$.fn.success_msg = function(msg){
+		var $msg = $('<div class="success_message" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#4CAF50; color:white; padding:15px 30px; border-radius:5px; z-index:10000; box-shadow:0 2px 10px rgba(0,0,0,0.2);">'+msg+'</div>');
+		$("body").append($msg);
+		setTimeout(function(){ $msg.fadeOut(function(){ $(this).remove(); }); }, 3000);
+	};
+}

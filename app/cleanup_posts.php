@@ -1,84 +1,108 @@
 <?php
-define('PROJECT_PATH', __DIR__); // nötig, da deine Klassen das prüfen
+/**
+ * Cleanup Posts Script
+ * Run this script periodically to clean up orphaned images and old data
+ * 
+ * Usage: php cleanup_posts.php
+ * Or set up as a cron job: 0 2 * * * php /path/to/cleanup_posts.php
+ */
 
-require_once 'config.class.php';
-require_once 'db.class.php';
-require_once 'user.class.php';
+// Include required files
+require_once __DIR__ . '/config.class.php';
+require_once __DIR__ . '/db.class.php';
+require_once __DIR__ . '/image.class.php';
+require_once __DIR__ . '/log.class.php';
 
-try {
-    // Zugriffsschutz – nur eingeloggte Benutzer
-    if (!User::is_logged_in()) {
-        throw new Exception("Du musst eingeloggt sein, um diese Aktion auszuführen.");
-    }
-
-    // Wenn Formular abgeschickt wurde → löschen
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cleanup'])) {
-        DB::get_instance()->query("DELETE FROM `posts` WHERE `status` = 5");
-        $message = "✅ Alle Posts mit Status 5 wurden erfolgreich gelöscht.";
-    }
-
-} catch (Exception $e) {
-    $error = $e->getMessage();
+// Only allow CLI execution
+if (php_sapi_name() !== 'cli') {
+    die('This script can only be run from command line');
 }
-?>
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <title>Datenbank bereinigen</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            background: #f4f4f4;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .box {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-        }
-        button {
-            background: #d9534f;
-            color: white;
-            border: none;
-            padding: 0.8rem 1.2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        button:hover {
-            background: #c9302c;
-        }
-        .msg {
-            margin-top: 1rem;
-            color: green;
-        }
-        .error {
-            margin-top: 1rem;
-            color: red;
-        }
-    </style>
-</head>
-<body>
-<div class="box">
-    <h2>Beiträge bereinigen</h2>
-    <p>Hier kannst du alle Posts mit <code>status = 5</code> endgültig löschen.</p>
 
-    <form method="post">
-        <button type="submit" name="cleanup" onclick="return confirm('Willst du wirklich alle gelöschten Posts entfernen?')">
-            🧹 Bereinigen starten
-        </button>
-    </form>
+// Initialize
+try {
+    echo "Starting cleanup process...\n";
+    echo "----------------------------\n\n";
+    
+    // Load configuration
+    $config = new Config();
+    echo "✓ Configuration loaded\n";
+    
+    // Connect to database
+    $db = DB::getInstance($config);
+    echo "✓ Database connected\n";
+    
+    // Initialize classes
+    $image = new Image($config);
+    $log = new Log($config);
+    echo "✓ Classes initialized\n\n";
+    
+    // 1. Clean up orphaned images
+    echo "1. Cleaning up orphaned images...\n";
+    $deleted_images = $image->cleanupOrphanedImages($db->getPDO());
+    echo "   Deleted $deleted_images orphaned image(s)\n\n";
+    
+    // 2. Clean up old log files
+    echo "2. Cleaning up old log files...\n";
+    $log_retention_days = $config->get('log_retention_days', 30);
+    $deleted_logs = $log->cleanOldLogs($log_retention_days);
+    echo "   Deleted $deleted_logs old log file(s)\n\n";
+    
+    // 3. Rotate large log files
+    echo "3. Rotating large log files...\n";
+    $log_files = $log->getLogFiles();
+    $rotated_count = 0;
+    foreach ($log_files as $log_file) {
+        if ($log->rotateLog($log_file)) {
+            $rotated_count++;
+            echo "   Rotated: $log_file\n";
+        }
+    }
+    echo "   Rotated $rotated_count log file(s)\n\n";
+    
+    // 4. Clean up deleted user data
+    echo "4. Cleaning up deleted user data...\n";
+    $stmt = $db->prepare("
+        DELETE FROM posts 
+        WHERE user_id NOT IN (SELECT id FROM users)
+    ");
+    $stmt->execute();
+    $deleted_posts = $stmt->rowCount();
+    echo "   Deleted $deleted_posts orphaned post(s)\n\n";
+    
+    // 5. Optimize database (SQLite only)
+    if ($db->getType() === 'sqlite') {
+        echo "5. Optimizing database...\n";
+        $db->exec('VACUUM');
+        $db->exec('ANALYZE');
+        echo "   Database optimized\n\n";
+    }
+    
+    // 6. Database statistics
+    echo "6. Database statistics:\n";
+    $stmt = $db->query("SELECT COUNT(*) FROM users");
+    $user_count = $stmt->fetchColumn();
+    echo "   Total users: $user_count\n";
+    
+    $stmt = $db->query("SELECT COUNT(*) FROM posts");
+    $post_count = $stmt->fetchColumn();
+    echo "   Total posts: $post_count\n";
+    
+    $stmt = $db->query("SELECT COUNT(*) FROM posts WHERE is_sticky = 1");
+    $sticky_count = $stmt->fetchColumn();
+    echo "   Sticky posts: $sticky_count\n\n";
+    
+    // Log cleanup completion
+    $log->log("Cleanup completed: $deleted_images images, $deleted_logs logs, $deleted_posts orphaned posts");
+    
+    echo "----------------------------\n";
+    echo "Cleanup completed successfully!\n";
+    
+} catch (Exception $e) {
+    echo "ERROR: " . $e->getMessage() . "\n";
+    if (isset($log)) {
+        $log->error("Cleanup failed: " . $e->getMessage());
+    }
+    exit(1);
+}
 
-    <?php if (!empty($message)) echo "<p class='msg'>$message</p>"; ?>
-    <?php if (!empty($error)) echo "<p class='error'>$error</p>"; ?>
-</div>
-</body>
-</html>
+exit(0);
