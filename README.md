@@ -6,6 +6,7 @@
 * **add Emoji Picker Bar**
 * **remove bbcode**
 * **add HTML for example**  `<center>Text<center> `
+* **A toggle button solution was created in the post based on the prior one: Show more, then show fewer!**
 ---
 
 # blog
