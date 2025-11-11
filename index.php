@@ -126,7 +126,7 @@ if (Config::get_safe("version", false)) {
 	<div id="dd_mask" class="mask"></div>
 	<div id="prepared" style="display:none;">
 		<!-- Login Button -->
-		<a class="show_more"><?php echo __("Show More"); ?></a>
+		<a class="show_more" data-text-more="<?php echo __("Show More"); ?>" data-text-less="<?php echo __("Show Less"); ?>"><?php echo __("Show More"); ?></a>
 
 		<!-- Login Button -->
 		<button type="button" class="button blue login_btn"><?php echo __("Login"); ?></button>
@@ -219,52 +219,79 @@ if (Config::get_safe("version", false)) {
 							<div class="e_drag"><span><?php echo __("Drag photos here"); ?></span></div>
 							<div class="e_drop"><span><?php echo __("Drop photos here"); ?></span></div>
 							<img src="<?php echo escape(Config::get("pic_small")); ?>" width="40" height="40" class="e_profile">
-<div class="t_area">
-	<textarea id="postText" class="e_text" placeholder="<?php echo __("What's on your mind?"); ?>"></textarea>
-</div>
+						<div class="t_area">
+							<textarea id="postText" class="e_text" placeholder="<?php echo __("What's on your mind?"); ?>"></textarea>
+						</div>
 
-<!-- BBCode Toolbar -->
-<div style="display:flex; justify-content: center; gap:6px; padding:8px 0; flex-wrap:wrap; border: 1px solid #dfdfdf; margin-bottom: 8px;border-radius: 15px;">
-	<!-- Text Formatierung -->
-	<button type="button" class="bbcode-btn" data-tag="b" title="Fett" style="font-weight:bold; padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">B</button>
-	<button type="button" class="bbcode-btn" data-tag="i" title="Kursiv" style="font-style:italic; padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">I</button>
-	<button type="button" class="bbcode-btn" data-tag="u" title="Unterstrichen" style="text-decoration:underline; padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">U</button>
-	<button type="button" class="bbcode-btn" data-tag="s" title="Durchgestrichen" style="text-decoration:line-through; padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:310px;">S</button>
-	
-	<span style="border-right: 1px solid #ddd; margin: 0 4px;"></span>
-	
-	<!-- Farbe & Größe -->
-	<button type="button" class="bbcode-btn" data-tag="color" title="Farbe" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">🎨</button>
-	<button type="button" class="bbcode-btn" data-tag="size" title="Größe" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">📏</button>
-	<button type="button" class="bbcode-btn" data-tag="highlight" title="Markieren" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">✨</button>
-	
-	<span style="border-right: 1px solid #ddd; margin: 0 4px;"></span>
-	
-	<!-- Ausrichtung -->
-	<button type="button" class="bbcode-btn" data-tag="left" title="Linksbündig" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">⬅️</button>
-	<button type="button" class="bbcode-btn" data-tag="center" title="Zentriert" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">⬆️</button>
-	<button type="button" class="bbcode-btn" data-tag="right" title="Rechtsbündig" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">➡️</button>
-	
-	<span style="border-right: 1px solid #ddd; margin: 0 4px;"></span>
-	
-	<!-- Struktur -->
-	<button type="button" class="bbcode-btn" data-tag="quote" title="Zitat" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">💬</button>
-	<button type="button" class="bbcode-btn" data-tag="code" title="Code" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px; font-family: monospace;">{ }</button>
-	<button type="button" class="bbcode-btn" data-tag="php" title="PHP Code" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px; font-family: monospace;">PHP</button>
-	<button type="button" class="bbcode-btn" data-tag="spoiler" title="Spoiler" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">👁️</button>
-	<button type="button" class="bbcode-btn" data-tag="list" title="Liste" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">📋</button>
-	<button type="button" class="bbcode-btn" data-tag="hr" title="Linie" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">━</button>
-	
-	<span style="border-right: 1px solid #ddd; margin: 0 4px;"></span>
-	
-	<!-- Links & Medien -->
-	<button type="button" class="bbcode-btn" data-tag="url" title="Link" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">🔗</button>
-	<button type="button" class="bbcode-btn" data-tag="img" title="Bild" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">🖼️</button>
-	<button type="button" class="bbcode-btn" data-tag="email" title="E-Mail" style="padding:6px 10px; border:1px solid #ccc; background:#fff; cursor:pointer; border-radius:10px;">📧</button>
+						<!-- ===== NEU: Markdown Toolbar ===== -->
+						<div style="display:flex; justify-content: center; gap:6px; padding:8px 0; flex-wrap:wrap; border: 1px solid #b8daed; background: #fff; margin-bottom: 8px; border-radius: 15px;">
+							<span style="font-size: 11px; font-weight: bold; color: #0066cc; align-self: center; margin-right: 8px;">MARKDOWN:</span>
+							
+							<!-- Text Formatierung -->
+							<button type="button" class="markdown-btn" data-md="bold" title="Fett" style="font-weight:bold; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace;">**B**</button>
+							<button type="button" class="markdown-btn" data-md="italic" title="Kursiv" style="font-style:italic; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace;">*I*</button>
+							<button type="button" class="markdown-btn" data-md="strike" title="Durchgestrichen" style="text-decoration:line-through; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace;">~~S~~</button>
+							
+							<span style="border-right: 1px solid #b8daed; margin: 0 4px;"></span>
+							
+							<!-- Überschriften -->
+							<button type="button" class="markdown-btn" data-md="h1" title="Überschrift 1" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;"># H1</button>
+							<button type="button" class="markdown-btn" data-md="h2" title="Überschrift 2" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;">## H2</button>
+							<button type="button" class="markdown-btn" data-md="h3" title="Überschrift 3" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;">### H3</button>
+							
+							<span style="border-right: 1px solid #b8daed; margin: 0 4px;"></span>
+							
+							<!-- Links & Bilder -->
+							<button type="button" class="markdown-btn" data-md="link" title="Link" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">🔗</button>
+							<button type="button" class="markdown-btn" data-md="image" title="Bild" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">🖼️</button>
+							
+							<span style="border-right: 1px solid #b8daed; margin: 0 4px;"></span>
+							
+							<!-- Code -->
+							<button type="button" class="markdown-btn" data-md="code" title="Inline Code" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;">`code`</button>
+							<button type="button" class="markdown-btn" data-md="codeblock" title="Code Block" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:10px;">```</button>
+							
+							<span style="border-right: 1px solid #b8daed; margin: 0 4px;"></span>
+							
+							<!-- Listen & Zitate -->
+							<button type="button" class="markdown-btn" data-md="ul" title="Liste" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">• List</button>
+							<button type="button" class="markdown-btn" data-md="ol" title="Nummerierte Liste" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">1. List</button>
+							<button type="button" class="markdown-btn" data-md="quote" title="Zitat" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">&gt; Quote</button>
+							<button type="button" class="markdown-btn" data-md="hr" title="Horizontale Linie" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace;">---</button>
+							<button type="button" class="markdown-btn" data-md="table" title="Tabelle" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">📊</button>
+						</div>
+						<!-- ===== HTML Toolbar ===== -->
+						<div style="display:flex; justify-content: center; gap:6px; padding:8px 0; flex-wrap:wrap; border: 1px solid #d4edda; background: #fff; margin-bottom: 8px; border-radius: 15px;">
+							<span style="font-size: 11px; font-weight: bold; color: #28a745; align-self: center; margin-right: 8px;">HTML:</span>
+							
+							<!-- Ausrichtung -->
+							<button type="button" class="html-btn" data-html="center" title="Zentrieren" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">⬆️ Center</button>
+							<button type="button" class="html-btn" data-html="right" title="Rechtsbündig" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">➡️ Right</button>
+							<button type="button" class="html-btn" data-html="left" title="Linksbündig" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">⬅️ Left</button>
+							
+							<span style="border-right: 1px solid #28a745; margin: 0 4px;"></span>
+							
+							<!-- Farbe & Hervorhebung -->
+							<button type="button" class="html-btn" data-html="color" title="Farbe" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">🎨 Color</button>
+							<button type="button" class="html-btn" data-html="mark" title="Markieren" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">✨ Mark</button>
+							
+							<span style="border-right: 1px solid #28a745; margin: 0 4px;"></span>
+							
+							<!-- Textgröße -->
+							<button type="button" class="html-btn" data-html="small" title="Klein" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; font-size:9px;">Small</button>
+							<button type="button" class="html-btn" data-html="big" title="Groß" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; font-size:14px; font-weight:bold;">Big</button>
+							
+							<span style="border-right: 1px solid #28a745; margin: 0 4px;"></span>
+							
+							<!-- Spezial -->
+							<button type="button" class="html-btn" data-html="underline" title="Unterstrichen" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; text-decoration:underline;">U</button>
+							<button type="button" class="html-btn" data-html="sup" title="Hochgestellt" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">x<sup>2</sup></button>
+							<button type="button" class="html-btn" data-html="sub" title="Tiefgestellt" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">H<sub>2</sub>O</button>
+							<button type="button" class="html-btn" data-html="spoiler" title="Spoiler" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">👁️ Spoiler</button>
 						</div>
 						<!-- Emoji Picker -->
 						<!-- Emoji Picker mit 44 modernen Emojis -->
-						<div id="emojiPicker" style="display:flex; flex-wrap:wrap; justify-content: space-around; gap:4px; padding:6px; border-radius:8px; background:#f8f8f8; border:1px solid #ddd; font-size:22px;">
+						<div id="emojiPicker" style="display:flex; flex-wrap:wrap; justify-content: space-around; gap:4px; padding:6px; border-radius:8px; background:#fff; border:1px solid #ddd; font-size:22px;">
 							<!-- Gesichter & Emotionen -->
 							<span class="emoji" data-emoji="😀">😀</span>
 							<span class="emoji" data-emoji="😃">😃</span>
@@ -482,7 +509,7 @@ if (Config::get_safe("version", false)) {
 
 <script>
 // ============================================
-// BBCode & Emoji Editor Funktionalität
+// Markdown & Emoji Editor Funktionalität
 // ============================================
 (function(){
 	'use strict';
@@ -518,8 +545,8 @@ if (Config::get_safe("version", false)) {
 		textarea.dispatchEvent(new Event('change', { bubbles: true }));
 	}
 
-		// Emoji-Mapping: Emoji → BBCode Text-Code (44 Emojis)
-		const emojiToBBCode = {
+		// Emoji-Mapping: Emoji → Text-Code (44 Emojis)
+		const emojiToCode = {
 			'😀': ':grinning:',
 			'😃': ':smiley:',
 			'😄': ':smile:',
@@ -565,71 +592,6 @@ if (Config::get_safe("version", false)) {
 			'🤑': ':money_mouth:',
 			'😲': ':astonished:'
 		};
-	// BBCode Button Handler
-	document.addEventListener('click', function(e) {
-		const btn = e.target.closest('.bbcode-btn');
-		if (!btn) return;
-		
-		e.preventDefault();
-		const tag = btn.getAttribute('data-tag');
-		const textarea = findTextarea(btn);
-		if (!textarea) return;
-
-		// Spezielle Handler für verschiedene Tags
-		switch(tag) {
-			case 'url':
-				const url = prompt('URL eingeben:');
-				if (url) insertAtCursor(textarea, '[url=' + url + ']', '[/url]');
-				break;
-			
-			case 'img':
-				const imgUrl = prompt('Bild-URL eingeben:');
-				if (imgUrl) insertAtCursor(textarea, '[img]' + imgUrl + '[/img]', '');
-				break;
-			
-			case 'email':
-				const email = prompt('E-Mail-Adresse eingeben:');
-				if (email) insertAtCursor(textarea, '[email]' + email + '[/email]', '');
-				break;
-			
-			case 'color':
-				const color = prompt('Farbe eingeben (z.B. red, #ff0000):', 'red');
-				if (color) insertAtCursor(textarea, '[color=' + color + ']', '[/color]');
-				break;
-			
-			case 'size':
-				const size = prompt('Schriftgröße eingeben (z.B. 20):', '16');
-				if (size) insertAtCursor(textarea, '[size=' + size + ']', '[/size]');
-				break;
-			
-			case 'font':
-				const font = prompt('Schriftart eingeben (z.B. Arial):', 'Arial');
-				if (font) insertAtCursor(textarea, '[font=' + font + ']', '[/font]');
-				break;
-			
-			case 'quote':
-				const author = prompt('Autor (optional):');
-				if (author !== null) {
-					if (author) {
-						insertAtCursor(textarea, '[quote=' + author + ']', '[/quote]');
-					} else {
-						insertAtCursor(textarea, '[quote]', '[/quote]');
-					}
-				}
-				break;
-			
-			case 'list':
-				insertAtCursor(textarea, '[list]\n[*] ', '\n[*] \n[/list]');
-				break;
-			
-			case 'hr':
-				insertAtCursor(textarea, '[hr]', '');
-				break;
-			
-			default:
-				insertAtCursor(textarea, '[' + tag + ']', '[/' + tag + ']');
-		}
-	});
 
 	// Emoji Click Handler
 	document.addEventListener('click', function(e) {
@@ -641,19 +603,204 @@ if (Config::get_safe("version", false)) {
 		const textarea = findTextarea(emojiEl);
 		if (!textarea) return;
 
-		// Konvertiere Emoji zu BBCode-Text
-		const bbcode = emojiToBBCode[emojiChar] || emojiChar;
-		insertAtCursor(textarea, bbcode, '');
+		// Füge Emoji-Code ein
+		const emojiCode = emojiToCode[emojiChar] || emojiChar;
+		insertAtCursor(textarea, emojiCode, '');
 	});
 
 	// Verhindere Doppel-Klicks
 	document.addEventListener('dblclick', function(e) {
-		if (e.target.closest('.emoji') || e.target.closest('.bbcode-btn')) {
+		if (e.target.closest('.emoji') || e.target.closest('.markdown-btn') || e.target.closest('.html-btn')) {
 			e.preventDefault();
 		}
 	});
+    // ===== MARKDOWN BUTTON HANDLER (NEU!) =====
+document.addEventListener('click', function(e) {
+	const btn = e.target.closest('.markdown-btn');
+	if (!btn) return;
+	
+	e.preventDefault();
+	const mdType = btn.getAttribute('data-md');
+	const textarea = findTextarea(btn);
+	if (!textarea) return;
+	
+	const start = textarea.selectionStart;
+	const end = textarea.selectionEnd;
+	const selectedText = textarea.value.substring(start, end);
+	
+	let before = '', after = '';
+	
+	switch(mdType) {
+		case 'bold':
+			before = '**';
+			after = '**';
+			break;
+		case 'italic':
+			before = '*';
+			after = '*';
+			break;
+		case 'strike':
+			before = '~~';
+			after = '~~';
+			break;
+		case 'h1':
+			before = '# ';
+			after = '';
+			break;
+		case 'h2':
+			before = '## ';
+			after = '';
+			break;
+		case 'h3':
+			before = '### ';
+			after = '';
+			break;
+		case 'link':
+			const url = prompt('URL eingeben:', 'https://');
+			if (url) {
+				if (selectedText) {
+					before = '[';
+					after = '](' + url + ')';
+				} else {
+					before = '[Link Text](' + url + ')';
+					after = '';
+				}
+			}
+			break;
+		case 'image':
+			const imgUrl = prompt('Bild-URL eingeben:', 'https://');
+			if (imgUrl) {
+				const alt = prompt('Alt-Text (optional):', 'Bild');
+				before = '![' + (alt || 'Bild') + '](' + imgUrl + ')';
+				after = '';
+			}
+			break;
+		case 'code':
+			before = '`';
+			after = '`';
+			break;
+		case 'codeblock':
+			const lang = prompt('Sprache (optional, z.B. javascript):', '');
+			before = '\n```' + (lang || '') + '\n';
+			after = '\n```\n';
+			break;
+		case 'ul':
+			before = '\n- ';
+			after = '\n- Item 2\n- Item 3\n';
+			break;
+		case 'ol':
+			before = '\n1. ';
+			after = '\n2. Item 2\n3. Item 3\n';
+			break;
+		case 'quote':
+			before = '\n> ';
+			after = '\n';
+			break;
+		case 'hr':
+			before = '\n---\n';
+			after = '';
+			break;
+		case 'table':
+			before = '\n| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n';
+			after = '';
+			break;
+	}
+	
+	if (before !== '' || after !== '') {
+		const newText = textarea.value.substring(0, start) + before + selectedText + after + textarea.value.substring(end);
+		textarea.value = newText;
+		
+		const newPos = start + before.length + selectedText.length;
+		textarea.selectionStart = textarea.selectionEnd = newPos;
+		textarea.focus();
+		
+		textarea.dispatchEvent(new Event('input', { bubbles: true }));
+		textarea.dispatchEvent(new Event('change', { bubbles: true }));
+	}
+});
 
-	console.log('✅ BBCode & Emoji Editor initialisiert');
+	// ===== HTML BUTTON HANDLER =====
+	document.addEventListener('click', function(e) {
+		const btn = e.target.closest('.html-btn');
+		if (!btn) return;
+		
+		e.preventDefault();
+		const htmlType = btn.getAttribute('data-html');
+		const textarea = findTextarea(btn);
+		if (!textarea) return;
+		
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const selectedText = textarea.value.substring(start, end);
+		
+		let before = '', after = '';
+		
+		switch(htmlType) {
+			case 'center':
+				before = '<center>';
+				after = '</center>';
+				break;
+			case 'right':
+				before = '<div align="right">';
+				after = '</div>';
+				break;
+			case 'left':
+				before = '<div align="left">';
+				after = '</div>';
+				break;
+			case 'color':
+				const color = prompt('Farbe eingeben (z.B. red, #ff0000):', 'red');
+				if (color) {
+					before = '<span style="color:' + color + '">';
+					after = '</span>';
+				}
+				break;
+			case 'mark':
+				before = '<mark>';
+				after = '</mark>';
+				break;
+			case 'small':
+				before = '<small>';
+				after = '</small>';
+				break;
+			case 'big':
+				before = '<big>';
+				after = '</big>';
+				break;
+			case 'underline':
+				before = '<u>';
+				after = '</u>';
+				break;
+			case 'sup':
+				before = '<sup>';
+				after = '</sup>';
+				break;
+			case 'sub':
+				before = '<sub>';
+				after = '</sub>';
+				break;
+			case 'spoiler':
+				const title = prompt('Spoiler Titel:', 'Klicken zum Anzeigen');
+				if (title !== null) {
+					before = '<details><summary>' + (title || 'Klicken zum Anzeigen') + '</summary>\n';
+					after = '\n</details>';
+				}
+				break;
+		}
+		
+		if (before !== '' || after !== '') {
+			const newText = textarea.value.substring(0, start) + before + selectedText + after + textarea.value.substring(end);
+			textarea.value = newText;
+			
+			const newPos = start + before.length + selectedText.length;
+			textarea.selectionStart = textarea.selectionEnd = newPos;
+			textarea.focus();
+			
+			textarea.dispatchEvent(new Event('input', { bubbles: true }));
+			textarea.dispatchEvent(new Event('change', { bubbles: true }));
+		}
+	});
+	console.log("✅ Markdown, HTML & Emoji Editor initialisiert");
 })();
 </script>
 </body>
