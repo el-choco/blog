@@ -1,3 +1,11 @@
+# Modified by el-choco:
+---
+**add Markdown**
+**add Markdown Picker Bar**
+**add Emojis**
+**add Emoji Picker Bar**
+**remove bbcode**
+
 # blog
 This is a simple self-hosted, lightweight, singe-user PHP blog, where you can create your own Facebook-like feed. Give read access to other people, and you can share rich text with photos including highlighted code or links.
 
