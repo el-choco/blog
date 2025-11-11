@@ -4,3 +4,57 @@
 .headbar {
   max-width: 1000px;
 }
+/* ============================================
+   COLLAPSE/EXPAND ANIMATION IMPROVEMENTS
+   ============================================ */
+/* Sanfte Animation beim Ein-/Ausklappen */
+.b_text {
+	transition: max-height 0.3s ease-out;
+	overflow: hidden;
+}
+
+/* Animiere den Button beim Hover */
+.show_more {
+	transition: all 0.2s ease;
+}
+
+.show_more:hover {
+	transform: scale(1.02);
+	box-shadow: 0 4px 15px rgba(24, 119, 242, 0.3) !important;
+}
+
+/* Optional: Fade-Effekt für Text am unteren Rand wenn collapsed */
+.b_text.collapsed::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 50px;
+	background: linear-gradient(to bottom, transparent, var(--primary-background, #fff));
+	pointer-events: none;
+}
+
+/* Position für den Fade-Effekt */
+.b_text.collapsed {
+	position: relative;
+}
+
+/* Verhindere Fade-Effekt wenn ausgeklappt */
+.b_text:not(.collapsed)::after {
+	display: none;
+}
+
+/* Button Icon (optional) */
+.show_more::before {
+	content: '▼';
+	display: inline-block;
+	margin-right: 8px;
+	transition: transform 0.3s ease;
+	font-size: 0.8em;
+}
+
+.show_more[data-expanded="true"]::before {
+	transform: rotate(180deg);
+	content: '▲';
+}
