@@ -769,11 +769,34 @@ $.fn.post_fill = function(data){
 	var height = 200;
 	if(data.text.length > 400 && post.find(".show_more").length == 0){
 		post.find(".b_text").css("max-height", height+"px");
+		post.find(".b_text").addClass("collapsed"); // Markiere als eingeklappt
+		
 		var show_more = $('#prepared .show_more').clone();
+		show_more.attr("data-expanded", "false"); // Zustand speichern
+		
+		// Hole übersetzten Text aus data-Attributen
+		var textMore = show_more.attr("data-text-more") || "Mehr anzeigen";
+		var textLess = show_more.attr("data-text-less") || "Weniger anzeigen";
+		
 		show_more.insertAfter(post.find(".b_text"));
+		
+		// Toggle-Funktionalität mit Animation
 		show_more.click(function(){
-			$(this).remove();
-			post.find(".b_text").css("max-height", '');
+			var isExpanded = $(this).attr("data-expanded") === "true";
+			
+			if(isExpanded) {
+				// Einklappen
+				post.find(".b_text").css("max-height", height+"px");
+				post.find(".b_text").addClass("collapsed");
+				$(this).text(textMore);
+				$(this).attr("data-expanded", "false");
+			} else {
+				// Ausklappen
+				post.find(".b_text").css("max-height", '');
+				post.find(".b_text").removeClass("collapsed");
+				$(this).text(textLess);
+				$(this).attr("data-expanded", "true");
+			}
 		});
 	} else if(post.find(".show_more").length != 0) {
 		post.find(".show_more").remove();
