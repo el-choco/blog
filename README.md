@@ -206,6 +206,8 @@ To check if your server is set up correctly, turn on a debug mode (in config add
 * Added Markdown-Picker-Bar **( New )**
 * Added Smilies  **( New )**
 * Added Smilies-Picker-Bar  **( New )**
+* Added toggle button solution was created in the post based on the prior one: Show more, then show fewer! **( New )**
+---
 * Dark mode, retina ready, legacy theme available.
 * Make posts available for **everyone**, **only you** or just for **friends**.
 * Extra fields in post: **Feeling**, **With** and **At**.
