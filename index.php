@@ -126,7 +126,7 @@ if (Config::get_safe("version", false)) {
 	<div id="dd_mask" class="mask"></div>
 	<div id="prepared" style="display:none;">
 		<!-- Login Button -->
-		<a class="show_more" data-text-more="<?php echo __("Show More"); ?>" data-text-less="<?php echo __("Show Less"); ?>"><?php echo __("Show More"); ?></a>
+		<a class="show_more"><?php echo __("Show More"); ?></a>
 
 		<!-- Login Button -->
 		<button type="button" class="button blue login_btn"><?php echo __("Login"); ?></button>
@@ -219,6 +219,13 @@ if (Config::get_safe("version", false)) {
 							<div class="e_drag"><span><?php echo __("Drag photos here"); ?></span></div>
 							<div class="e_drop"><span><?php echo __("Drop photos here"); ?></span></div>
 							<img src="<?php echo escape(Config::get("pic_small")); ?>" width="40" height="40" class="e_profile">
+							
+							<!-- Multi-Image Upload Preview Container -->
+							<div class="image-preview-container" style="display:none;"></div>
+							<div class="multi-upload-info" style="display:none;">
+								<span class="image-count"></span>
+							</div>
+							
 						<div class="t_area">
 							<textarea id="postText" class="e_text" placeholder="<?php echo __("What's on your mind?"); ?>"></textarea>
 						</div>
