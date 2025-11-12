@@ -4,24 +4,160 @@ $("#dd_mask").click(function(){
 	o_mask.remove();
 });
 
+// Multi-Upload State
+var uploadQueue = [];
+var uploadedImages = [];
+var maxImages = 10;
+var isUploading = false;
+
+// Global helper functions for multi-upload
+function show_multi_upload_progress(currentIndex, total) {
+	var progressText = 'Lade Bild ' + currentIndex + ' von ' + total + '...';
+	$('.e_loading .progress-text').text(progressText);
+}
+
+function show_image_previews(files, container) {
+	container.empty();
+	
+	Array.from(files).forEach(function(file, index) {
+		if (index >= maxImages) return;
+		
+		var reader = new FileReader();
+		reader.onload = function(e) {
+			var previewHtml = '<div class="image-preview-item" data-index="' + index + '">' +
+				'<img src="' + e.target.result + '" alt="Bild ' + (index + 1) + '">' +
+				'<div class="image-preview-overlay">' +
+				'<span class="image-number">' + (index + 1) + '</span>' +
+				'<button class="remove-image-btn" data-index="' + index + '">×</button>' +
+				'</div></div>';
+			container.append(previewHtml);
+		};
+		reader.readAsDataURL(file);
+	});
+	
+	container.off('click', '.remove-image-btn').on('click', '.remove-image-btn', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+		var index = $(this).data('index');
+		removeImageFromQueue(index);
+	});
+}
+
+function removeImageFromQueue(index) {
+	uploadQueue.splice(index, 1);
+	
+	var container = $('.image-preview-container');
+	var fileInput = $('.photo_upload')[0];
+	
+	if (fileInput && window.DataTransfer) {
+		var dt = new DataTransfer();
+		uploadQueue.forEach(function(file) { dt.items.add(file); });
+		fileInput.files = dt.files;
+	}
+	
+	if (uploadQueue.length > 0) {
+		show_image_previews(uploadQueue, container);
+	} else {
+		container.empty();
+		$('.multi-upload-info').hide();
+	}
+	
+	updateImageCounter();
+}
+
+function updateImageCounter() {
+	var count = uploadQueue.length;
+	var countText = count > 0 ? count + ' Bild' + (count > 1 ? 'er' : '') + ' ausgewählt (max. ' + maxImages + ')' : '';
+	$('.image-count').text(countText);
+	
+	if (count > 0) {
+		$('.multi-upload-info').show();
+	} else {
+		$('.multi-upload-info').hide();
+	}
+}
+
+function upload_multiple_images(files, modal, callback) {
+	if (!files || files.length === 0) {
+		callback([]);
+		return;
+	}
+	
+	var filesToUpload = Array.from(files).slice(0, maxImages);
+	var uploadedResults = [];
+	var currentIndex = 0;
+	
+	function uploadNext() {
+		if (currentIndex >= filesToUpload.length) {
+			callback(uploadedResults);
+			return;
+		}
+		
+		var file = filesToUpload[currentIndex];
+		currentIndex++;
+		
+		show_multi_upload_progress(currentIndex, filesToUpload.length);
+		
+		if (file.type.match(/image/) === null) {
+			$("body").error_msg("Nur Bilder können hochgeladen werden.");
+			uploadNext();
+			return;
+		}
+		
+		var form_data = new FormData();
+		form_data.append('file', file);
+		
+		$.post({
+			xhr: function() {
+				var xhr = new window.XMLHttpRequest();
+				xhr.upload.addEventListener("progress", function(evt) {
+					if (evt.lengthComputable) {
+						var percentComplete = evt.loaded / evt.total;
+						modal.find('.e_loading .e_meter > span').width((percentComplete * 100) + "%");
+					}
+				}, false);
+				return xhr;
+			},
+			dataType: "json",
+			url: "ajax.php?action=upload_image",
+			cache: false,
+			contentType: false,
+			processData: false,
+			data: form_data,
+			success: function(data) {
+				if (data.error) {
+					$("body").error_msg(data.msg);
+				} else {
+					uploadedResults.push(data);
+				}
+				uploadNext();
+			},
+			error: function() {
+				$("body").error_msg("Fehler beim Upload von Bild " + currentIndex);
+				uploadNext();
+			}
+		});
+	}
+	
+	uploadNext();
+}
+
 // Posts loading functions
 var posts = {
-	initialized: false, // Is initialized?
-	first: false,       // Is first loaded?
-	last: false,        // Is last loaded?
-	loading: false,     // Is something loading right now?
-
-	limit: 5,           // Limit posts per load
-	offset: 0,          // Current offset
-	sort: "default",    // Default is from newest to oldest posts (use reverse for oldest to newest)
-
+	initialized: false,
+	first: false,
+	last: false,
+	loading: false,
+	limit: 5,
+	offset: 0,
+	sort: "default",
 	filter: {
-		from: null,     // Show posts from specified date
-		to: null,       // Show posts to specified date
-		id: null,       // Show only one post with specified id
-		tag: null,      // Show posts that contains specified tag 
-		loc: null,      // Show posts that location contains specified location 
-		person: null    // Show posts that person contains specified person 
+		from: null,
+		to: null,
+		id: null,
+		tag: null,
+		loc: null,
+		person: null
 	},
 
 	tryload: function(){
@@ -33,7 +169,6 @@ var posts = {
 		$(".more_posts").hide();
 		posts.filter = {};
 
-		// Update ID hash
 		location.hash.replace(/([a-z]+)\=([^\&]+)/g, function(_, key, value){
 			if (key == "sort") {
 				posts.sort = decodeURIComponent(value);
@@ -47,11 +182,8 @@ var posts = {
 	},
 
 	reload: function(){
-		// Reset values
 		this.first = this.last = this.loading = false;
 		this.offset = 0;
-
-		// Remove current and load new
 		$("#posts").empty();
 		this.load();
 	},
@@ -62,14 +194,11 @@ var posts = {
 	},
 
 	load: function(){
-		// If is something loading now or is loading done
 		if(!posts.initialized || posts.loading || posts.last)
 			return ;
 
-		// Now is
 		posts.loading = true;
 
-		// Load
 		$.get({
 			dataType: "json",
 			url: "ajax.php",
@@ -99,14 +228,9 @@ var posts = {
 					posts.last = true;
 
 				$(posts_data).each(function(i, data){
-					// Create empty post
 					var post = $('#prepared .post_row').clone();
-
-					// Update post data and apply scripts
 					post.post_fill(data);
 					post.apply_post();
-
-					// Prepend
 					$("#posts").append(post);
 				});
 
@@ -161,6 +285,44 @@ var cnt_funcs = {
 		obj.find("img").attr("src", data.thumb);
 
 		return obj;
+	},
+	images: function(dataArray){
+		if (!Array.isArray(dataArray) || dataArray.length === 0) {
+			return $('<div></div>');
+		}
+		
+		var lightboxId = 'gallery-' + lightboxes++;
+		var galleryContainer = $('<div class="b_gallery"></div>');
+		var imageCount = dataArray.length;
+		var gridClass = 'gallery-grid-' + Math.min(imageCount, 4);
+		galleryContainer.addClass(gridClass);
+		
+		dataArray.forEach(function(imgData, index) {
+			var imgLink = $('<a class="b_gallery_item"></a>');
+			imgLink.attr("href", imgData.path);
+			imgLink.attr("data-lightbox", lightboxId);
+			imgLink.attr("data-title", "Bild " + (index + 1) + " von " + imageCount);
+			
+			var img = $('<img>');
+			img.attr("src", imgData.thumb);
+			img.attr("alt", "Bild " + (index + 1));
+			
+			if (imageCount > 4 && index === 3) {
+				var overlay = $('<div class="gallery-more-overlay">+' + (imageCount - 4) + '</div>');
+				imgLink.append(overlay);
+			}
+			
+			imgLink.append(img);
+			
+			if (index < 4) {
+				galleryContainer.append(imgLink);
+			} else {
+				imgLink.css('display', 'none');
+				galleryContainer.append(imgLink);
+			}
+		});
+		
+		return galleryContainer;
 	}
 };
 
@@ -169,11 +331,9 @@ var login = {
 	is: false,
 	visitor: false,
 
-	// Logout button
 	logout_btn: function(name){
 		var btn = $('#prepared .logout_btn').clone();
 
-		// Onclick show modal
 		$(btn).click(function(){
 			$.get({
 				dataType: "json",
@@ -187,19 +347,14 @@ var login = {
 						return ;
 					}
 
-					// Remove new post input
 					if(login.is){
 						new_post.remove();
 					}
 
-					// Is not logged in anymore
 					login.is = false;
 					login.visitor = false;
-					// Remove logout button
 					btn.remove();
-					// Load first posts
 					posts.reload();
-					// Append login button
 					login.login_btn();
 				}
 			});
@@ -208,29 +363,23 @@ var login = {
 		$("#headline").append(btn);
 	},
 
-	// Login button
 	login_btn: function(){
 		var btn = $('#prepared .login_btn').clone();
 
-		// Onclick show modal
 		$(btn).click(function(){
-			// Clone modal
 			var modal = $('#prepared .login_modal').clone();
 			$("body").css("overflow", "hidden");
 
-			// On enter save
 			modal.find(".nick,.pass").keypress(function(e) {
 				if(e.which == 13) {
 					modal.find(".do_login").click();
 				}
 			});
 
-			// On close
 			modal.find(".close").click(function(){
 				modal.close();
 			});
 
-			// On save
 			modal.find(".do_login").click(function(){
 				$.post({
 					dataType: "json",
@@ -246,37 +395,27 @@ var login = {
 							return ;
 						}
 
-						// Now is logged in
 						login.is = data.logged_in;
 						login.visitor = data.is_visitor;
 
-						// Logged in user can add post
 						if(login.is){
 							new_post.create();
 						}
-						// Remove login button
 						btn.remove();
-						// Load first posts
 						posts.reload();
-						// Append logout btn
 						login.logout_btn();
-						// Close modal
 						modal.close();
 					}
 				});
 			});
 
-			// Append modal
 			$("body").append(modal);
-
-			// Focus Nick
 			modal.find("input.nick").focus();
 		});
 
 		$("#headline").append(btn);
 	},
 
-	// Check if is user logged in
 	init: function(){
 		$.get({
 			dataType: "json",
@@ -290,7 +429,6 @@ var login = {
 					return ;
 				}
 
-				// Check if is logged in
 				login.is = data.logged_in;
 				login.visitor = data.is_visitor;
 				if(!login.is && !login.visitor){
@@ -299,12 +437,10 @@ var login = {
 					login.logout_btn();
 				}
 
-				// Logged in user can add post
 				if(login.is){
 					new_post.create();
 				}
 
-				// Initialize
 				posts.init();
 			}
 		});
@@ -327,40 +463,61 @@ var new_post = {
 		new_post.obj.apply_edit({"privacy": "private"});
 
 		$(new_post.obj).find(".save").click(function(){
-			$.post({
-				dataType: "json",
-				url: "ajax.php",
-				data: {
-					action: "insert",
-					text: new_post.obj.find(".e_text").val(),
-					//text: new_post.obj.find(".e_text").text(),
-					feeling: new_post.obj.find(".i_feeling").val(),
-					persons: new_post.obj.find(".i_persons").val(),
-					location: new_post.obj.find(".i_location").val(),
-					content_type: new_post.obj.find(".i_content_type").val(),
-					content: new_post.obj.find(".i_content").val(),
-					privacy: new_post.obj.find(".privacy").data("val")
-				},
-				success: function(data){
-					if(data.error){
-						$("body").error_msg(data.msg);
-						return ;
+			var modal = new_post.obj;
+			var saveBtn = $(this);
+			
+			if (uploadQueue.length > 1) {
+				saveBtn.prop('disabled', true);
+				
+				modal.find(".e_loading").css("display", "block");
+				modal.find(".e_loading .e_meter > span").width(0);
+				
+				upload_multiple_images(uploadQueue, modal, function(uploadedResults) {
+					if (uploadedResults.length > 0) {
+						modal.find(".i_content_type").val("images");
+						modal.find(".i_content").val(JSON.stringify(uploadedResults));
 					}
+					savePost();
+				});
+			} else {
+				savePost();
+			}
+			
+			function savePost() {
+				$.post({
+					dataType: "json",
+					url: "ajax.php",
+					data: {
+						action: "insert",
+						text: modal.find(".e_text").val(),
+						feeling: modal.find(".i_feeling").val(),
+						persons: modal.find(".i_persons").val(),
+						location: modal.find(".i_location").val(),
+						content_type: modal.find(".i_content_type").val(),
+						content: modal.find(".i_content").val(),
+						privacy: modal.find(".privacy").data("val")
+					},
+					success: function(data){
+						if(data.error){
+							$("body").error_msg(data.msg);
+							saveBtn.prop('disabled', false);
+							modal.find(".e_loading").hide();
+							return;
+						}
 
-					// Empty inputs
-					new_post.clear();
+						uploadQueue = [];
+						uploadedImages = [];
+						new_post.clear();
 
-					// Create empty post
-					var post = $('#prepared .post_row').clone();
-
-					// Update post data and apply scripts
-					post.post_fill(data);
-					post.apply_post();
-
-					// Prepend
-					posts.add_new(post);
-				}
-			});
+						var post = $('#prepared .post_row').clone();
+						post.post_fill(data);
+						post.apply_post();
+						posts.add_new(post);
+						
+						modal.find(".e_loading").hide();
+					}
+				});
+			}
 		});
 
 		$("#b_feed").prepend(new_post.obj);
@@ -414,18 +571,17 @@ $.fn.error_msg = function(msg){
 	}, 5000);
 };
 
-// Attach the event handler to the document
 $(document).ajaxError(function(){
 	$("body").error_msg("Ajax request failed.");
 });
 
 // Apply events on post editing
 $.fn.apply_edit = function(data){
-	// Parse link
 	var ignored_links = [], is_content = false;
 
 	return this.each(function(){
 		var modal = $(this);
+		var currentImages = [];
 
 		var add_content_loading = function(){
 			modal.find(".e_loading").css("display", "block");
@@ -444,6 +600,53 @@ $.fn.apply_edit = function(data){
 			modal.find(".i_content_type").val("");
 			modal.find(".i_content").val("");
 			is_content = false;
+			currentImages = [];
+		};
+
+		var remove_single_image = function(index) {
+			if (currentImages.length > 0) {
+				currentImages.splice(index, 1);
+				
+				if (currentImages.length > 0) {
+					add_content("images", currentImages);
+				} else {
+					remove_content();
+				}
+			}
+		};
+
+		var show_editable_gallery = function(images) {
+			var content = modal.find(".content").empty();
+			var clear = $('<button class="clear" title="Alle Bilder entfernen"></button>');
+			clear.click(remove_content);
+			
+			var galleryContainer = $('<div class="b_gallery_edit"></div>');
+			
+			images.forEach(function(imgData, index) {
+				var imgItem = $('<div class="b_gallery_edit_item"></div>');
+				
+				var img = $('<img>');
+				img.attr("src", imgData.thumb || imgData.path);
+				img.attr("alt", "Bild " + (index + 1));
+				
+				var removeBtn = $('<button class="remove-gallery-image-btn" title="Dieses Bild entfernen">×</button>');
+				removeBtn.attr('data-index', index);
+				removeBtn.click(function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+					var idx = parseInt($(this).attr('data-index'));
+					remove_single_image(idx);
+				});
+				
+				var imageNumber = $('<span class="gallery-image-number">' + (index + 1) + '</span>');
+				
+				imgItem.append(img);
+				imgItem.append(imageNumber);
+				imgItem.append(removeBtn);
+				galleryContainer.append(imgItem);
+			});
+			
+			content.append(clear).append(galleryContainer).css("display", "block");
 		};
 
 		var add_content = function(type, data){
@@ -451,15 +654,21 @@ $.fn.apply_edit = function(data){
 				return;
 
 			modal.find(".e_loading").hide();
-			var content = modal.find(".content").empty();
-			var clear = $('<button class="clear"></button>');
-			clear.click(remove_content);
+			
+			if(type === "images" && Array.isArray(data)) {
+				currentImages = data;
+				show_editable_gallery(data);
+			} else {
+				var content = modal.find(".content").empty();
+				var clear = $('<button class="clear"></button>');
+				clear.click(remove_content);
 
-			if(typeof cnt_funcs[type] === "function")
-				content.append(clear).append(cnt_funcs[type](data)).css("display", "block");
+				if(typeof cnt_funcs[type] === "function")
+					content.append(clear).append(cnt_funcs[type](data)).css("display", "block");
+			}
 
 			modal.find(".i_content_type").val(type);
-			modal.find(".i_content").val(JSON.stringify(data));
+			modal.find(".i_content").val(JSON.stringify(currentImages.length > 0 ? currentImages : data));
 			is_content = true;
 		};
 
@@ -468,14 +677,11 @@ $.fn.apply_edit = function(data){
 				return;
 
 			t.replace(/(https?:\/\/[^\s]+)/g, function(link, a, b) {
-			//t.replace(/(https?:\/\/([^\s]+|\&nbsp\;))(:?\&nbsp\;|\s|$)/g, function(link, a, b) {
-			//t.replace(/(https?\:\/\/(.*))(\&nbsp\;|\s|$)/g, function(link, a, b) {
 				if(ignored_links.indexOf(link) !== -1)
 					return ;
 
 				add_content_loading();
 
-				// Parse link
 				$.get({
 					dataType: "json",
 					url: "ajax.php",
@@ -490,10 +696,8 @@ $.fn.apply_edit = function(data){
 							return ;
 						}
 
-						// This one is ignored now
 						ignored_links.push(link);
 
-						// If is not valid
 						if(data == null || typeof data.valid === "undefined" || !data.valid)
 							return ;
 
@@ -522,11 +726,9 @@ $.fn.apply_edit = function(data){
 				xhr: function(){
 					var xhr = new window.XMLHttpRequest();
 
-					// Upload progress
 					xhr.upload.addEventListener("progress", function(evt){
 						if (evt.lengthComputable) {
 							var percentComplete = evt.loaded / evt.total;
-							//Do something with upload progress
 							content_loading_progress(percentComplete);
 						}
 					}, false);
@@ -555,25 +757,12 @@ $.fn.apply_edit = function(data){
 			});
 		}
 
-		// Set data and key listeners for text div
-		//modal.find(".e_text").text(data.plain_text)
 		modal.find(".e_text").val(data.plain_text)
-		/*.keydown(function(e) {
-			if(e.keyCode === 13){
-				document.execCommand('insertHTML', false, "\n");
-				return false;
-			}
-		})/*.keyup(function(e){
-			var t = e.currentTarget.innerHTML;
-			parse_link(t);
-		})*/.on('paste', function(e) {
-			//e.preventDefault();
-
+		.on('paste', function(e) {
 			var items = (e.clipboardData || e.originalEvent.clipboardData).items;
 			for(var i in items) {
 				var item = items[i];
 
-				// Try to parse link from plain text
 				if(item.type === 'text/plain'){
 					item.getAsString(function(text) {
 						parse_link(text);
@@ -581,24 +770,14 @@ $.fn.apply_edit = function(data){
 					break;
 				}
 
-				// Try to get image from clipboard
 				if(item.type.indexOf('image') !== -1){
 					var file = item.getAsFile();
 					upload_image(file);
 					break;
 				}
 			}
-
-			/*
-			if(document.queryCommandSupported('insertText')){
-				document.execCommand('insertText', false, text);
-			} else {
-				document.execCommand('paste', false, text);
-			}
-			*/
 		});
 
-		// Kein Autoresize - manuelles Resize erlauben
 		setTimeout(function(){
 			var textarea = $(modal.find(".e_text"));
 			textarea.css({
@@ -609,10 +788,36 @@ $.fn.apply_edit = function(data){
 			});
 		},0);
 
-		// Upload image button
 		var file_data = modal.find(".photo_upload");
+		file_data.attr("multiple", "multiple");
+		
 		$(file_data).change(function(){
-			upload_image(file_data[0].files[0]);
+			var files = file_data[0].files;
+			
+			if (!files || files.length === 0) return;
+			
+			uploadQueue = Array.from(files);
+			
+			var previewContainer = modal.find('.image-preview-container');
+			if (previewContainer.length === 0) {
+				previewContainer = $('<div class="image-preview-container"></div>');
+				modal.find('.drop_space').after(previewContainer);
+			}
+			
+			previewContainer.show();
+			show_image_previews(uploadQueue, previewContainer);
+			updateImageCounter();
+			
+			if (files.length === 1) {
+				add_content_loading();
+				upload_image(files[0]);
+			} else {
+				if (modal.find('.multi-upload-info').length === 0) {
+					previewContainer.after('<div class="multi-upload-info"><span class="image-count"></span> - Klicke auf "Speichern" zum Hochladen</div>');
+				}
+				modal.find('.multi-upload-info').show();
+				updateImageCounter();
+			}
 		});
 
 		if(data.feeling){
@@ -631,19 +836,16 @@ $.fn.apply_edit = function(data){
 			modal.find(".options_content tr.location").css("display", "table-row");
 		}
 
-		// Set options_content events
 		modal.find(".options_content tr").each(function(){
 			var oc = $(this);
 			var op = modal.find(".options li."+oc.attr("class")+" a");
 
-			// On click clear
 			oc.find(".clear").click(function(){
 				oc.find("input").val("");
 				op.removeClass("active");
 				oc.hide();
 			});
 
-			// On click icon
 			op.click(function(){
 				oc.toggle();
 				if(oc.find("input").val() == "")
@@ -652,11 +854,9 @@ $.fn.apply_edit = function(data){
 			});
 		});
 
-		// Set privacy button events
 		modal.find(".privacy").click(function(){
 			var privacy_btn = $(this);
 
-			// Find dropdown
 			o_mask = $("#prepared .privacy_settings").clone();
 			$("body").append(o_mask);
 			o_mask.css({
@@ -664,7 +864,6 @@ $.fn.apply_edit = function(data){
 				left: $(this).offset().left - (($(o_mask).outerWidth() - $(this).outerWidth()) / 2 ) + 'px'
 			});
 
-			// Show mask and dropdown
 			$("#dd_mask").show();
 			o_mask.show();
 
@@ -676,19 +875,16 @@ $.fn.apply_edit = function(data){
 
 		});
 
-		// Set privacy button content
 		modal.find(".privacy").data("val", data.privacy);
 		modal.find(".privacy .cnt").html($("#prepared .privacy_settings .set[data-val="+data.privacy+"]").html());
 
-		// Add content
 		if(data.content_type){
 			try{
-				data.content = JSON.parse(data.content)
-				add_content(data.content_type, data.content);
+				var parsedContent = JSON.parse(data.content);
+				add_content(data.content_type, parsedContent);
 			} catch(err) {}
 		}
 
-		// Drag & Drop
 		modal.find(".drop_space").filedrop(upload_image);
 	});
 };
@@ -703,7 +899,6 @@ $.fn.post_fill = function(data){
 		post.addClass("is_hidden");
 	}
 	
-	// Sticky Post Handling
 	if(data.is_sticky && parseInt(data.is_sticky)) {
 		post.addClass("sticky");
 		post.attr("data-sticky", "1");
@@ -719,7 +914,7 @@ $.fn.post_fill = function(data){
 		$(overlay).hide();
 
 		var showOverlay = function() {
-			$(overlay).css("display", ""); // .show() would cause display:block;
+			$(overlay).css("display", "");
 			$(window).off('scroll', showOnViewport);
 			$(window).off('blur', showOverlay);
 		};
@@ -748,61 +943,19 @@ $.fn.post_fill = function(data){
 
 	post.find(".b_date").attr("href", "#id="+data.id);
 
-	/*
-	var chars = 380;
-	if(data.text.length > chars){
-		var b_more = [];
-		b_more.push($("<span>" + data.text.substr(0, chars) + "</span>"));
-		b_more.push($("<span>&hellip;&nbsp;</span>"));
-		b_more.push($('#prepared .show_more').clone());
-		b_more.push($("<span>" + data.text + "</span>").hide());
-		post.find(".b_text").html(b_more);
-
-		b_more[2].click(function(){
-			$(b_more).each(function(){
-				$(this).toggle();
-			});
-		});
-	}
-	*/
-
 	var height = 200;
 	if(data.text.length > 400 && post.find(".show_more").length == 0){
 		post.find(".b_text").css("max-height", height+"px");
-		post.find(".b_text").addClass("collapsed"); // Markiere als eingeklappt
-		
 		var show_more = $('#prepared .show_more').clone();
-		show_more.attr("data-expanded", "false"); // Zustand speichern
-		
-		// Hole übersetzten Text aus data-Attributen
-		var textMore = show_more.attr("data-text-more") || "Mehr anzeigen";
-		var textLess = show_more.attr("data-text-less") || "Weniger anzeigen";
-		
 		show_more.insertAfter(post.find(".b_text"));
-		
-		// Toggle-Funktionalität mit Animation
 		show_more.click(function(){
-			var isExpanded = $(this).attr("data-expanded") === "true";
-			
-			if(isExpanded) {
-				// Einklappen
-				post.find(".b_text").css("max-height", height+"px");
-				post.find(".b_text").addClass("collapsed");
-				$(this).text(textMore);
-				$(this).attr("data-expanded", "false");
-			} else {
-				// Ausklappen
-				post.find(".b_text").css("max-height", '');
-				post.find(".b_text").removeClass("collapsed");
-				$(this).text(textLess);
-				$(this).attr("data-expanded", "true");
-			}
+			$(this).remove();
+			post.find(".b_text").css("max-height", '');
 		});
 	} else if(post.find(".show_more").length != 0) {
 		post.find(".show_more").remove();
 	}
 
-	// Highlight
 	if(typeof hljs !== "undefined"){
 		post.find("code").each(function(i, block) {
 			hljs.highlightBlock(block);
@@ -845,7 +998,6 @@ $.fn.post_fill = function(data){
 	return post;
 };
 
-// Close modal
 $.fn.close = function(){
 	$(this).remove();
 	$("body").css("overflow", "auto");
@@ -857,15 +1009,12 @@ $.fn.apply_post = function(){
 		var post = $(this);
 		var post_id = post.data("id");
 
-		// If is not logged in can't edit post
 		if(!login.is){
 			$(post).find(".b_tools").css("display", "none").click(function(){});
 			return ;
 		}
 
-		// On click tools
 		$(post).find(".b_tools").css("display", "inline-block").click(function(){
-			// Clone dropdown
 			o_mask = $('#prepared .post_tools').clone();
 			$("body").append(o_mask);
 			o_mask.css({
@@ -873,16 +1022,12 @@ $.fn.apply_post = function(){
 				left: $(this).offset().left + $(this).outerWidth() - $(o_mask).outerWidth() - 5 + 'px'
 			});
 
-			// Show mask and dropdown
 			$("#dd_mask").show();
 			o_mask.show();
 
-			// Edit post event
 			$(o_mask).find(".edit_post").click(function(){
-				// Hide mask
 				$("#dd_mask").click();
 
-				// Load data
 				$.get({
 					dataType: "json",
 					url: "ajax.php",
@@ -893,60 +1038,79 @@ $.fn.apply_post = function(){
 							return ;
 						}
 
-						// Clone modal
 						var modal = $('#prepared .edit_modal').clone();
 						$("body").css("overflow", "hidden");
 
-						// Fullfill new modal with data and turn on functionality
 						modal.apply_edit(data);
 
-						// On close
 						modal.find(".close").click(function(){
 							modal.close();
 						});
 
-						// On save
 						modal.find(".save").click(function(){
-							$.post({
-								dataType: "json",
-								url: "ajax.php",
-								data: {
-									action: "update",
-									id: post_id,
-									text: modal.find(".e_text").val(),
-									//text: modal.find(".e_text").text(),
-									feeling: modal.find(".i_feeling").val(),
-									persons: modal.find(".i_persons").val(),
-									location: modal.find(".i_location").val(),
-									content_type: modal.find(".i_content_type").val(),
-									content: modal.find(".i_content").val(),
-									privacy: modal.find(".privacy").data("val")
-								},
-								success: function(data){
-									if(data.error){
-										modal.find(".modal-body").error_msg(data.msg);
-										return ;
+							var saveBtn = $(this);
+							
+							if (uploadQueue.length > 1) {
+								saveBtn.prop('disabled', true);
+								
+								modal.find(".e_loading").css("display", "block");
+								modal.find(".e_loading .e_meter > span").width(0);
+								
+								upload_multiple_images(uploadQueue, modal, function(uploadedResults) {
+									if (uploadedResults.length > 0) {
+										modal.find(".i_content_type").val("images");
+										modal.find(".i_content").val(JSON.stringify(uploadedResults));
 									}
+									savePost();
+								});
+							} else {
+								savePost();
+							}
+							
+							function savePost() {
+								$.post({
+									dataType: "json",
+									url: "ajax.php",
+									data: {
+										action: "update",
+										id: post_id,
+										text: modal.find(".e_text").val(),
+										feeling: modal.find(".i_feeling").val(),
+										persons: modal.find(".i_persons").val(),
+										location: modal.find(".i_location").val(),
+										content_type: modal.find(".i_content_type").val(),
+										content: modal.find(".i_content").val(),
+										privacy: modal.find(".privacy").data("val")
+									},
+									success: function(data){
+										if(data.error){
+											modal.find(".modal-body").error_msg(data.msg);
+											saveBtn.prop('disabled', false);
+											modal.find(".e_loading").hide();
+											return;
+										}
 
-									data.id = post_id;
-									post.post_fill(data);
-									modal.close();
-								}
-							});
+										uploadQueue = [];
+										uploadedImages = [];
+
+										data.id = post_id;
+										post.post_fill(data);
+										modal.close();
+										
+										modal.find(".e_loading").hide();
+									}
+								});
+							}
 						});
 
-						// Append modal
 						$("body").append(modal);
 					}
 				});
 			});
 
-			// Edit date event
 			$(o_mask).find(".edit_date").click(function(){
-				// Hide mask
 				$("#dd_mask").click();
 
-				// Load data
 				$.get({
 					dataType: "json",
 					url: "ajax.php",
@@ -957,7 +1121,6 @@ $.fn.apply_post = function(){
 							return ;
 						}
 
-						// Clone modal
 						var modal = $('#prepared .edit_date_modal').clone();
 						$("body").css("overflow", "hidden");
 
@@ -967,15 +1130,12 @@ $.fn.apply_post = function(){
 						modal.find(".hour").val(data[3]);
 						modal.find(".minute").val(data[4]);
 
-						// Initialize datepick
 						datepick(modal.find(".datepicker"));
 
-						// On close
 						modal.find(".close").click(function(){
 							modal.close();
 						});
 
-						// On save
 						modal.find(".save").click(function(){
 							$.post({
 								dataType: "json",
@@ -1003,20 +1163,17 @@ $.fn.apply_post = function(){
 							});
 						});
 
-						// Append modal
 						$("body").append(modal);
 					}
 				});
 			});
 
-			// Hide event
 			if(post.hasClass("is_hidden")) {
 				$(o_mask).find(".hide").hide();
 			} else {
 				$(o_mask).find(".show").hide();
 			}
 			$(o_mask).find(".hide, .show").click(function(){
-				// Hide mask
 				$("#dd_mask").click();
 
 				var action = 'hide';
@@ -1046,21 +1203,16 @@ $.fn.apply_post = function(){
 				});
 			});
 
-			// Delete event
 			$(o_mask).find(".delete_post").click(function(){
-				// Hide mask
 				$("#dd_mask").click();
 
-				// Clone modal
 				var modal = $('#prepared .delete_modal').clone();
 				$("body").css("overflow", "hidden");
 
-				// On close
 				modal.find(".close").click(function(){
 					modal.close();
 				});
 
-				// On delete
 				modal.find(".delete").click(function(){
 					$.post({
 						dataType: "json",
@@ -1081,12 +1233,9 @@ $.fn.apply_post = function(){
 					});
 				});
 
-				// Append modal
 				$("body").append(modal);
 			});
 
-			// Sticky Post Toggle Handler - NEU!
-			// Zeige/Verstecke Buttons basierend auf aktuellem Status
 			if(post.hasClass("sticky") || post.attr("data-sticky") === "1") {
 				$(o_mask).find(".sticky_post").hide();
 				$(o_mask).find(".unsticky_post").show();
@@ -1096,7 +1245,6 @@ $.fn.apply_post = function(){
 			}
 			
 			$(o_mask).find(".sticky_post, .unsticky_post").click(function(){
-				// Hide mask
 				$("#dd_mask").click();
 				
 				$.post({
@@ -1112,7 +1260,6 @@ $.fn.apply_post = function(){
 							return;
 						}
 						
-						// Aktualisiere Post-Status
 						if(data.is_sticky){
 							post.addClass("sticky");
 							post.attr("data-sticky", "1");
@@ -1121,7 +1268,6 @@ $.fn.apply_post = function(){
 							post.attr("data-sticky", "0");
 						}
 						
-						// Success-Meldung
 						var msg = data.is_sticky ? "Post als Sticky markiert! 📌" : "Sticky entfernt.";
 						if(typeof $("body").success_msg === "function"){
 							$("body").success_msg(msg);
@@ -1129,7 +1275,6 @@ $.fn.apply_post = function(){
 							alert(msg);
 						}
 						
-						// Reload um Sortierung zu aktualisieren
 						setTimeout(function(){
 							posts.reload();
 						}, 800);
@@ -1143,16 +1288,13 @@ $.fn.apply_post = function(){
 	});
 };
 
-// File drop
 $.fn.filedrop = function(callback){
 	return this.each(function() {
-		// Stop default browser actions
 		$(this).bind('dragover dragleave drop', function(event) {
 			event.stopPropagation();
 			event.preventDefault();
 		});
 
-		// Check if is element being dragged
 		var dropTimer;
 		$(this).on('dragover', function(e) {
 			var dt = e.originalEvent.dataTransfer;
@@ -1166,12 +1308,9 @@ $.fn.filedrop = function(callback){
 			}, 25);
 		});
 
-		// Catch drop event
 		$(this).bind('drop', function(event) {
-			// Get all files that are dropped
 			var files = event.originalEvent.target.files || event.originalEvent.dataTransfer.files
 
-			// Pass first uploaded file to callback
 			if(typeof callback === "function" && files.length > 0)
 				callback(files[0]);
 
@@ -1180,10 +1319,8 @@ $.fn.filedrop = function(callback){
 	})
 };
 
-// Start application
 login.init();
 
-// Check if is element being dragged
 var dragTimer;
 $(document).on('dragover', function(e) {
 	var dt = e.originalEvent.dataTransfer;
@@ -1201,8 +1338,6 @@ $(window)
 .on("scroll resize touchmove", posts.tryload)
 .on("hashchange", posts.hash_update);
 
-
-// Success message helper
 if(!$.fn.success_msg){
 	$.fn.success_msg = function(msg){
 		var $msg = $('<div class="success_message" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#4CAF50; color:white; padding:15px 30px; border-radius:5px; z-index:10000; box-shadow:0 2px 10px rgba(0,0,0,0.2);">'+msg+'</div>');
