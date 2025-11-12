@@ -1,17 +1,16 @@
-version: "3"
-
 services:
   blog:
-    image: m1k1o/blog:latest
+    image: el-choco/blog:latest
     restart: unless-stopped
     environment:
-        TZ: Europe/Vienna
+        TZ: Europe/Berlin
         BLOG_TITLE: Blog
         BLOG_NAME: Max Musermann
         BLOG_NICK: username
         BLOG_PASS: password
         BLOG_LANG: en
     ports:
-      - 80:80
+      - 8011:80
     volumes:
       - ./data:/var/www/html/data
+
