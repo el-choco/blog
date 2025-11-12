@@ -58,3 +58,447 @@
 	transform: rotate(180deg);
 	content: '▲';
 }
+/* ============================================
+   MULTI-IMAGE GALLERY STYLES
+   ============================================ */
+/* ===== UPLOAD PREVIEW ===== */
+.image-preview-container {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: 10px;
+	margin: 15px 0;
+	padding: 15px;
+	background: #f8f9fa;
+	border-radius: 12px;
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+.image-preview-item {
+	position: relative;
+	aspect-ratio: 1;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	transition: all 0.3s;
+	cursor: pointer;
+}
+
+.image-preview-item:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.image-preview-item img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.image-preview-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent);
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	padding: 8px;
+	opacity: 0;
+	transition: opacity 0.3s;
+}
+
+.image-preview-item:hover .image-preview-overlay {
+	opacity: 1;
+}
+
+.image-number {
+	background: rgba(0,0,0,0.7);
+	color: white;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: bold;
+}
+
+.remove-image-btn {
+	background: #e74c3c;
+	color: white;
+	border: none;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	font-size: 20px;
+	line-height: 1;
+	cursor: pointer;
+	transition: all 0.3s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+}
+
+.remove-image-btn:hover {
+	background: #c0392b;
+	transform: scale(1.1);
+}
+
+.multi-upload-info {
+	background: #d1ecf1;
+	border: 1px solid #bee5eb;
+	border-radius: 8px;
+	padding: 12px;
+	margin: 10px 0;
+	color: #0c5460;
+	text-align: center;
+	font-size: 14px;
+}
+
+.image-count {
+	font-weight: bold;
+}
+
+/* ===== GALERIE IM FEED (50% Größe) ===== */
+.b_gallery {
+	display: grid;
+	gap: 4px;
+	margin: 10px auto 0;
+	background: #000;
+	border-radius: 8px;
+	overflow: hidden;
+	width: 50%;
+	max-width: 50%;
+	box-sizing: border-box;
+}
+
+.b_gallery_item {
+	position: relative;
+	overflow: hidden;
+	display: block;
+	line-height: 0;
+	width: 100%;
+}
+
+.b_gallery_item img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+	transition: transform 0.3s;
+}
+
+.b_gallery_item:hover img {
+	transform: scale(1.05);
+}
+
+/* 1 Bild */
+.b_gallery.gallery-grid-1 {
+	grid-template-columns: 1fr;
+}
+
+.b_gallery.gallery-grid-1 .b_gallery_item {
+	aspect-ratio: 16 / 9;
+	max-height: 250px;
+}
+
+/* 2 Bilder */
+.b_gallery.gallery-grid-2 {
+	grid-template-columns: 1fr 1fr;
+}
+
+.b_gallery.gallery-grid-2 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 200px;
+}
+
+/* 3 Bilder */
+.b_gallery.gallery-grid-3 {
+	grid-template-columns: repeat(3, 1fr);
+}
+
+.b_gallery.gallery-grid-3 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+/* 4 Bilder - eine Reihe */
+.b_gallery.gallery-grid-4 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-4 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+/* 5 Bilder - 4 + 1 */
+.b_gallery.gallery-grid-5 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-5 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+.b_gallery.gallery-grid-5 .b_gallery_item:nth-child(5) {
+	grid-column: 2 / 4;
+}
+
+/* 6 Bilder - 4 + 2 */
+.b_gallery.gallery-grid-6 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-6 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+.b_gallery.gallery-grid-6 .b_gallery_item:nth-child(5) {
+	grid-column: 2 / 3;
+}
+
+.b_gallery.gallery-grid-6 .b_gallery_item:nth-child(6) {
+	grid-column: 3 / 4;
+}
+
+/* 7 Bilder - 4 + 3 */
+.b_gallery.gallery-grid-7 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-7 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+/* 8 Bilder - 4 + 4 */
+.b_gallery.gallery-grid-8 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-8 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+/* 9 Bilder - 4 + 4 + 1 */
+.b_gallery.gallery-grid-9 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-9 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+.b_gallery.gallery-grid-9 .b_gallery_item:nth-child(9) {
+	grid-column: 2 / 4;
+}
+
+/* 10 Bilder - 4 + 4 + 2 */
+.b_gallery.gallery-grid-10 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-10 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+.b_gallery.gallery-grid-10 .b_gallery_item:nth-child(9) {
+	grid-column: 2 / 3;
+}
+
+.b_gallery.gallery-grid-10 .b_gallery_item:nth-child(10) {
+	grid-column: 3 / 4;
+}
+
+/* "+X" Overlay für mehr als 10 Bilder (auf dem letzten sichtbaren Bild) */
+.gallery-more-overlay {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.7);
+	color: white;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 36px;
+	font-weight: bold;
+	pointer-events: none;
+}
+
+/* ===== Post Content Container Fix ===== */
+.b_post .b_content {
+	overflow: hidden;
+	width: 100%;
+	box-sizing: border-box;
+	display: flex;
+	justify-content: center;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1200px) {
+	.b_gallery {
+		width: 60%;
+		max-width: 60%;
+	}
+}
+
+@media (max-width: 768px) {
+	.image-preview-container {
+		grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+		gap: 8px;
+	}
+	
+	/* Auf Mobile: Galerie auf 80% vergrößern */
+	.b_gallery {
+		width: 80%;
+		max-width: 80%;
+	}
+	
+	/* Auf Mobile: Grid auf 2 Spalten reduzieren */
+	.b_gallery.gallery-grid-3,
+	.b_gallery.gallery-grid-4,
+	.b_gallery.gallery-grid-5,
+	.b_gallery.gallery-grid-6,
+	.b_gallery.gallery-grid-7,
+	.b_gallery.gallery-grid-8,
+	.b_gallery.gallery-grid-9,
+	.b_gallery.gallery-grid-10 {
+		grid-template-columns: repeat(2, 1fr);
+	}
+	
+	/* Reset special positioning on mobile */
+	.b_gallery.gallery-grid-5 .b_gallery_item:nth-child(5),
+	.b_gallery.gallery-grid-6 .b_gallery_item:nth-child(5),
+	.b_gallery.gallery-grid-6 .b_gallery_item:nth-child(6),
+	.b_gallery.gallery-grid-9 .b_gallery_item:nth-child(9),
+	.b_gallery.gallery-grid-10 .b_gallery_item:nth-child(9),
+	.b_gallery.gallery-grid-10 .b_gallery_item:nth-child(10) {
+		grid-column: auto;
+	}
+	
+	.gallery-more-overlay {
+		font-size: 24px;
+	}
+}
+
+@media (max-width: 480px) {
+	.b_gallery {
+		width: 100%;
+		max-width: 100%;
+	}
+}
+
+/* ===== UPLOAD PROGRESS ===== */
+.e_loading .progress-text {
+	text-align: center;
+	margin-top: 10px;
+	font-size: 14px;
+	color: #666;
+}
+
+/* ===== DRAG & DROP HIGHLIGHT ===== */
+.drop_space.dragover {
+	border-color: #667eea;
+	background: rgba(102, 126, 234, 0.1);
+}
+
+/* ===== LIGHTBOX ANPASSUNGEN ===== */
+.lb-data .lb-number {
+	font-size: 14px;
+	color: #fff;
+}
+
+/* Lightbox Caption */
+.lb-data .lb-caption {
+	font-weight: normal;
+	line-height: 1.5;
+}
+/* ===== EDITABLE GALLERY (while editing) ===== */
+.b_gallery_edit {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: 10px;
+	padding: 15px;
+	background: #f8f9fa;
+	border-radius: 12px;
+	max-height: 400px;
+	overflow-y: auto;
+}
+
+.b_gallery_edit_item {
+	position: relative;
+	aspect-ratio: 1;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+	transition: all 0.3s;
+}
+
+.b_gallery_edit_item:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.b_gallery_edit_item img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.gallery-image-number {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	background: rgba(0,0,0,0.7);
+	color: white;
+	padding: 4px 8px;
+	border-radius: 12px;
+	font-size: 12px;
+	font-weight: bold;
+	pointer-events: none;
+}
+
+.remove-gallery-image-btn {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	background: #e74c3c;
+	color: white;
+	border: none;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	font-size: 24px;
+	line-height: 1;
+	cursor: pointer;
+	transition: all 0.3s;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	opacity: 0;
+	transform: scale(0.8);
+}
+
+.b_gallery_edit_item:hover .remove-gallery-image-btn {
+	opacity: 1;
+	transform: scale(1);
+}
+
+.remove-gallery-image-btn:hover {
+	background: #c0392b;
+	transform: scale(1.1) !important;
+}
+
+.remove-gallery-image-btn:active {
+	transform: scale(0.95) !important;
+}
