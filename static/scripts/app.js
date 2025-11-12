@@ -294,7 +294,7 @@ var cnt_funcs = {
 		var lightboxId = 'gallery-' + lightboxes++;
 		var galleryContainer = $('<div class="b_gallery"></div>');
 		var imageCount = dataArray.length;
-		var gridClass = 'gallery-grid-' + Math.min(imageCount, 4);
+		var gridClass = 'gallery-grid-' + Math.min(imageCount, 10);
 		galleryContainer.addClass(gridClass);
 		
 		dataArray.forEach(function(imgData, index) {
@@ -889,7 +889,7 @@ $.fn.apply_edit = function(data){
 	});
 };
 
-// Fill post data
+// Fill post data - MIT TOGGLE FIX
 $.fn.post_fill = function(data){
 	var post = $(this);
 
@@ -943,17 +943,47 @@ $.fn.post_fill = function(data){
 
 	post.find(".b_date").attr("href", "#id="+data.id);
 
+	// ===== TOGGLE FIX - "MEHR ANZEIGEN" / "WENIGER ANZEIGEN" =====
 	var height = 200;
-	if(data.text.length > 400 && post.find(".show_more").length == 0){
-		post.find(".b_text").css("max-height", height+"px");
+	var textContainer = post.find(".b_text");
+	
+	// Entferne alte Buttons
+	post.find(".show_more").remove();
+	textContainer.removeClass("text-collapsed");
+	
+	if(data.text.length > 400){
+		textContainer.css("max-height", height+"px");
+		textContainer.addClass("text-collapsed");
+		
 		var show_more = $('#prepared .show_more').clone();
-		show_more.insertAfter(post.find(".b_text"));
+		show_more.text("Mehr anzeigen");
+		show_more.attr("data-expanded", "false");
+		show_more.insertAfter(textContainer);
+		
 		show_more.click(function(){
-			$(this).remove();
-			post.find(".b_text").css("max-height", '');
+			var isExpanded = $(this).attr("data-expanded") === "true";
+			
+			if(!isExpanded){
+				// Expand
+				textContainer.css("max-height", 'none');
+				textContainer.removeClass("text-collapsed");
+				$(this).text("Weniger anzeigen");
+				$(this).attr("data-expanded", "true");
+			} else {
+				// Collapse
+				textContainer.css("max-height", height+"px");
+				textContainer.addClass("text-collapsed");
+				$(this).text("Mehr anzeigen");
+				$(this).attr("data-expanded", "false");
+				
+				// Smooth scroll zurück zum Post
+				$('html, body').animate({
+					scrollTop: post.offset().top - 100
+				}, 300);
+			}
 		});
-	} else if(post.find(".show_more").length != 0) {
-		post.find(".show_more").remove();
+	} else {
+		textContainer.css("max-height", 'none');
 	}
 
 	if(typeof hljs !== "undefined"){
