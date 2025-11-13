@@ -354,6 +354,31 @@ var login = {
 		$("#headline").append(btn);
 	},
 
+	trash_toggle_btn: function(){
+		var btn = $('<button type="button" class="button gray trash_toggle_btn">🗑️ <span class="trash_toggle_text"></span></button>');
+		
+		// Set initial text
+		var showing_trash = posts.filter.trash === "true";
+		btn.find('.trash_toggle_text').text(showing_trash ? "Hide Trash" : "Show Trash");
+		
+		$(btn).click(function(){
+			var current_showing_trash = posts.filter.trash === "true";
+			
+			if(current_showing_trash) {
+				// Hide trash
+				delete posts.filter.trash;
+				location.hash = '';
+				btn.find('.trash_toggle_text').text("Show Trash");
+			} else {
+				// Show trash
+				location.hash = 'trash=true';
+				btn.find('.trash_toggle_text').text("Hide Trash");
+			}
+		});
+
+		$("#headline").append(btn);
+	},
+
 	login_btn: function(){
 		var btn = $('#prepared .login_btn').clone();
 
@@ -426,6 +451,9 @@ var login = {
 					login.login_btn();
 				} else {
 					login.logout_btn();
+					if(login.is){
+						login.trash_toggle_btn();
+					}
 				}
 
 				if(login.is){
@@ -890,6 +918,14 @@ $.fn.post_fill = function(data){
 		post.addClass("is_hidden");
 	}
 	
+	if(parseInt(data.is_trashed)) {
+		post.addClass("is_trashed");
+		post.attr("data-trashed", "1");
+	} else {
+		post.removeClass("is_trashed");
+		post.attr("data-trashed", "0");
+	}
+	
 	if(data.is_sticky && parseInt(data.is_sticky)) {
 		post.addClass("sticky");
 		post.attr("data-sticky", "1");
@@ -1224,6 +1260,71 @@ $.fn.apply_post = function(){
 				});
 			});
 
+			// Trash/Restore button visibility
+			if(post.hasClass("is_trashed") || post.attr("data-trashed") === "1") {
+				$(o_mask).find(".trash_post").hide();
+				$(o_mask).find(".restore_post").show();
+				$(o_mask).find(".delete_post").show();  // Show permanent delete for trashed posts
+			} else {
+				$(o_mask).find(".trash_post").show();
+				$(o_mask).find(".restore_post").hide();
+				$(o_mask).find(".delete_post").hide();  // Hide permanent delete for non-trashed posts
+			}
+
+			$(o_mask).find(".trash_post").click(function(){
+				$("#dd_mask").click();
+
+				var modal = $('#prepared .trash_modal').clone();
+				$("body").css("overflow", "hidden");
+
+				modal.find(".close").click(function(){
+					modal.close();
+				});
+
+				modal.find(".trash").click(function(){
+					$.post({
+						dataType: "json",
+						url: "ajax.php",
+						data: {
+							action: "delete",  // This now moves to trash
+							id: post_id
+						},
+						success: function(data){
+							if(data.error){
+								modal.find(".modal-body").error_msg(data.msg);
+								return ;
+							}
+
+							post.remove();
+							modal.close();
+						}
+					});
+				});
+
+				$("body").append(modal);
+			});
+
+			$(o_mask).find(".restore_post").click(function(){
+				$("#dd_mask").click();
+
+				$.post({
+					dataType: "json",
+					url: "ajax.php",
+					data: {
+						action: "restore",
+						id: post_id
+					},
+					success: function(data){
+						if(data.error){
+							$("body").error_msg(data.msg);
+							return ;
+						}
+
+						post.remove();
+					}
+				});
+			});
+
 			$(o_mask).find(".delete_post").click(function(){
 				$("#dd_mask").click();
 
@@ -1239,7 +1340,7 @@ $.fn.apply_post = function(){
 						dataType: "json",
 						url: "ajax.php",
 						data: {
-							action: "delete",
+							action: "permanent_delete",
 							id: post_id
 						},
 						success: function(data){
