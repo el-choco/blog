@@ -23,7 +23,7 @@ class Post
 		$tag_pattern = '/<\/?(' . implode('|', $allowed_tags) . ')(?:\s[^>]*)?\s*\/?>/i';
 		
 		$c = preg_replace_callback($tag_pattern, function($matches) use (&$html_tags, &$tag_counter) {
-			$placeholder = "___HTML_TAG_{$tag_counter}___";
+			$placeholder = "\x00HTMLTAG" . $tag_counter . "\x00";
 			$html_tags[$placeholder] = $matches[0];
 			$tag_counter++;
 			return $placeholder;
@@ -34,10 +34,10 @@ class Post
 		$code_counter = 0;
 		
 		// Fenced code blocks with optional language (```lang or ``` followed by code then ```)
-		$c = preg_replace_callback('/```(\w*)\n(.*?)\n```/s', function($matches) use (&$code_blocks, &$code_counter, &$html_tags, &$tag_counter) {
+		$c = preg_replace_callback('/```(\w*)\n(.*?)\n```/s', function($matches) use (&$code_blocks, &$code_counter) {
 			$lang = trim($matches[1]);
 			$code = $matches[2];
-			$placeholder = "___CODE_BLOCK_{$code_counter}___";
+			$placeholder = "\x00CODEBLOCK" . $code_counter . "\x00";
 			
 			if(Config::get_safe("highlight", false) && $lang) {
 				$code_blocks[$placeholder] = '<code class="'.$lang.'">'.htmlspecialchars($code, ENT_QUOTES, 'UTF-8').'</code>';
@@ -50,9 +50,30 @@ class Post
 		
 		// Inline code (`code`)
 		$c = preg_replace_callback('/`([^`]+)`/', function($matches) use (&$code_blocks, &$code_counter) {
-			$placeholder = "___CODE_BLOCK_{$code_counter}___";
+			$placeholder = "\x00CODEBLOCK" . $code_counter . "\x00";
 			$code_blocks[$placeholder] = '<code>'.htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8').'</code>';
 			$code_counter++;
+			return $placeholder;
+		}, $c);
+		
+		// Process Markdown links/images BEFORE htmlspecialchars to preserve URLs
+		// Temporarily store them to prevent double-processing
+		$links = [];
+		$link_counter = 0;
+		
+		// Markdown - Images ![alt](url)
+		$c = preg_replace_callback('/!\[([^\]]*)\]\(([^\)]+)\)/', function($matches) use (&$links, &$link_counter) {
+			$placeholder = "\x00LINK" . $link_counter . "\x00";
+			$links[$placeholder] = '<img src="'.htmlspecialchars($matches[2], ENT_QUOTES, 'UTF-8').'" alt="'.htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8').'">';
+			$link_counter++;
+			return $placeholder;
+		}, $c);
+		
+		// Markdown - Links [text](url)
+		$c = preg_replace_callback('/\[([^\]]+)\]\(([^\)]+)\)/', function($matches) use (&$links, &$link_counter) {
+			$placeholder = "\x00LINK" . $link_counter . "\x00";
+			$links[$placeholder] = '<a href="'.htmlspecialchars($matches[2], ENT_QUOTES, 'UTF-8').'" target="_blank">'.htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8').'</a>';
+			$link_counter++;
 			return $placeholder;
 		}, $c);
 		
@@ -61,7 +82,7 @@ class Post
 		
 		// Restore HTML tag placeholders (they're now safe because they were whitelisted)
 		foreach($html_tags as $placeholder => $tag) {
-			$c = str_replace(htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8'), $tag, $c);
+			$c = str_replace($placeholder, $tag, $c);
 		}
 		
 		// Process Markdown - Headers (must be at start of line)
@@ -83,12 +104,6 @@ class Post
 		
 		// Markdown - Strikethrough (~~text~~)
 		$c = preg_replace('/~~(.+?)~~/s', '<del>$1</del>', $c);
-		
-		// Markdown - Links [text](url)
-		$c = preg_replace('/\[([^\]]+)\]\(([^\)]+)\)/', '<a href="$2" target="_blank">$1</a>', $c);
-		
-		// Markdown - Images ![alt](url)
-		$c = preg_replace('/!\[([^\]]*)\]\(([^\)]+)\)/', '<img src="$2" alt="$1">', $c);
 		
 		// Markdown - Horizontal rule
 		$c = preg_replace('/^(\-\-\-+|___+|\*\*\*+)$/m', '<hr>', $c);
@@ -145,6 +160,7 @@ class Post
 		$c = preg_replace('/&quot;([^&]+)&quot;/', "„$1\"", $c);
 		
 		// Original text processing - Auto-linking URLs (if not already in a link)
+		// Use negative lookbehind to avoid matching URLs that are already part of links
 		$c = preg_replace('/(?<!href=&quot;|src=&quot;)(https?\:\/\/[^\s&<]+)/', '<a href="$1" target="_blank">$1</a>', $c);
 		
 		// Original text processing - Hashtags
@@ -155,7 +171,12 @@ class Post
 		
 		// Restore code blocks
 		foreach($code_blocks as $placeholder => $code) {
-			$c = str_replace(htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8'), $code, $c);
+			$c = str_replace($placeholder, $code, $c);
+		}
+		
+		// Restore links
+		foreach($links as $placeholder => $link) {
+			$c = str_replace($placeholder, $link, $c);
 		}
 		
 		return $c;
