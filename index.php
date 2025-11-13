@@ -194,17 +194,19 @@ if (Config::get_safe("version", false)) {
 
 		<!-- Post Tools -->
 		<ul class="b_dropdown post_tools">
-			<li><a class="edit_post"><?php echo __("Edit Post"); ?></a></li>
-			<li><a class="edit_date"><?php echo __("Change Date"); ?></a></li>
+			<li><a class="edit_post">✏️ <?php echo __("Edit Post"); ?></a></li>
+			<li><a class="edit_date">📅 <?php echo __("Change Date"); ?></a></li>
 			<li>
-				<a class="sticky_post"><?php echo __("Mark as Sticky"); ?></a>
-				<a class="unsticky_post"><?php echo __("Remove Sticky"); ?></a>
+				<a class="sticky_post">📌 <?php echo __("Mark as Sticky"); ?></a>
+				<a class="unsticky_post">📌 <?php echo __("Remove Sticky"); ?></a>
 			</li>
 			<li>
-				<a class="hide"><?php echo __("Hide from Timeline"); ?></a>
-				<a class="show"><?php echo __("Show on Timeline"); ?></a>
+				<a class="hide">👁️ <?php echo __("Hide from Timeline"); ?></a>
+				<a class="show">👁️ <?php echo __("Show on Timeline"); ?></a>
 			</li>
-			<li><a class="delete_post"><?php echo __("Delete Post"); ?></a></li>
+			<li><a class="trash_post">🗑️ <?php echo __("Move to Trash"); ?></a></li>
+			<li><a class="restore_post">♻️ <?php echo __("Restore Post"); ?></a></li>
+			<li><a class="delete_post">❌ <?php echo __("Delete Permanently"); ?></a></li>
 		</ul>
 		<!-- Edit Modal -->
 		<div class="modal edit_modal">
@@ -426,19 +428,38 @@ if (Config::get_safe("version", false)) {
 			</div>
 		</div>
 
-		<!-- Delete Modal -->
+		<!-- Trash Modal -->
+		<div class="modal trash_modal">
+			<div class="modal-dialog small">
+				<div class="modal-content">
+					<div class="modal-header">
+						<a class="close"></a>
+						<h4 class="modal-title"><?php echo __("Move to Trash"); ?></h4>
+					</div>
+					<div class="modal-body"><?php echo __("This post will be moved to trash. You can restore it later or delete it permanently."); ?></div>
+					<div class="modal-footer">
+						<div class="buttons">
+							<a class="button gray close"><?php echo __("Cancel"); ?></a>
+							<button type="button" class="button blue trash"><?php echo __("Move to Trash"); ?></button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Delete Modal (Permanent) -->
 		<div class="modal delete_modal">
 			<div class="modal-dialog small">
 				<div class="modal-content">
 					<div class="modal-header">
 						<a class="close"></a>
-						<h4 class="modal-title"><?php echo __("Delete Post"); ?></h4>
+						<h4 class="modal-title"><?php echo __("Delete Permanently"); ?></h4>
 					</div>
-					<div class="modal-body"><?php echo __("This post will be deleted and you'll no longer be able to find it. You can also edit this post if you just want to change something."); ?></div>
+					<div class="modal-body"><?php echo __("This post will be permanently deleted and you'll no longer be able to find it. This action cannot be undone."); ?></div>
 					<div class="modal-footer">
 						<div class="buttons">
 							<a class="button gray close"><?php echo __("Cancel"); ?></a>
-							<button type="button" class="button blue delete"><?php echo __("Delete Post"); ?></button>
+							<button type="button" class="button blue delete"><?php echo __("Delete Permanently"); ?></button>
 						</div>
 					</div>
 				</div>
