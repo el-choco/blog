@@ -10,80 +10,155 @@ class Post
 	}
 
 	private static function parse_content($c){
-		$parser = new JBBCode\Parser();
-		$parser->addCodeDefinitionSet(new JBBCode\DefaultCodeDefinitionSet());
-
-		if(Config::get("highlight")){
-			$c = str_replace("\t", "  ", $c);
-			$c = preg_replace("/\[code(?:=([^\[]+))?\]\s*?(?:\n|\r)?/i", '[code=$1]', $c);
-			$c = preg_replace("/\[\/code\]\s*?(?:\n|\r)?/i", '[/code]', $c);
-
-			// Add code definiton
-			$parser->addCodeDefinition(new class extends \JBBCode\CodeDefinition {
-				public function __construct(){
-					parent::__construct();
-					$this->setTagName("code");
-					$this->setParseContent(false);
-					$this->setUseOption(true);
-				}
-
-				public function asHtml(\JBBCode\ElementNode $el){
-					$content = $this->getContent($el);
-					$class = $el->getAttribute()['code'];
-					return '<code class="'.$class.'">'.htmlentities($content).'</code>';
-				}
-			});
+		// Preserve HTML tags by temporarily replacing them with placeholders
+		$html_tags = [];
+		$tag_counter = 0;
+		
+		// Whitelist of allowed HTML tags
+		$allowed_tags = ['center', 'div', 'span', 'p', 'br', 'hr', 'strong', 'b', 'em', 'i', 'u', 's', 'del', 
+		                 'mark', 'small', 'big', 'sub', 'sup', 'code', 'pre', 'blockquote', 
+		                 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+		                 'a', 'img', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'details', 'summary'];
+		
+		$tag_pattern = '/<\/?(' . implode('|', $allowed_tags) . ')(?:\s[^>]*)?\s*\/?>/i';
+		
+		$c = preg_replace_callback($tag_pattern, function($matches) use (&$html_tags, &$tag_counter) {
+			$placeholder = "___HTML_TAG_{$tag_counter}___";
+			$html_tags[$placeholder] = $matches[0];
+			$tag_counter++;
+			return $placeholder;
+		}, $c);
+		
+		// Process code blocks first (before other markdown)
+		$code_blocks = [];
+		$code_counter = 0;
+		
+		// Fenced code blocks with optional language (```lang or ``` followed by code then ```)
+		$c = preg_replace_callback('/```(\w*)\n(.*?)\n```/s', function($matches) use (&$code_blocks, &$code_counter, &$html_tags, &$tag_counter) {
+			$lang = trim($matches[1]);
+			$code = $matches[2];
+			$placeholder = "___CODE_BLOCK_{$code_counter}___";
+			
+			if(Config::get_safe("highlight", false) && $lang) {
+				$code_blocks[$placeholder] = '<code class="'.$lang.'">'.htmlspecialchars($code, ENT_QUOTES, 'UTF-8').'</code>';
+			} else {
+				$code_blocks[$placeholder] = '<pre><code>'.htmlspecialchars($code, ENT_QUOTES, 'UTF-8').'</code></pre>';
+			}
+			$code_counter++;
+			return $placeholder;
+		}, $c);
+		
+		// Inline code (`code`)
+		$c = preg_replace_callback('/`([^`]+)`/', function($matches) use (&$code_blocks, &$code_counter) {
+			$placeholder = "___CODE_BLOCK_{$code_counter}___";
+			$code_blocks[$placeholder] = '<code>'.htmlspecialchars($matches[1], ENT_QUOTES, 'UTF-8').'</code>';
+			$code_counter++;
+			return $placeholder;
+		}, $c);
+		
+		// Escape HTML in the remaining text (not in preserved tags or code blocks)
+		$c = htmlspecialchars($c, ENT_QUOTES, 'UTF-8');
+		
+		// Restore HTML tag placeholders (they're now safe because they were whitelisted)
+		foreach($html_tags as $placeholder => $tag) {
+			$c = str_replace(htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8'), $tag, $c);
 		}
-
-		// Custom tags
-		$builder = new JBBCode\CodeDefinitionBuilder("goal", "<div class=\"b_goal star\">{param}</div>");
-		$parser->addCodeDefinition($builder->build());
-
-		$builder = new JBBCode\CodeDefinitionBuilder("goal", "<div class=\"b_goal {option}\">{param}</div>");
-		$builder->setUseOption(true);
-		$parser->addCodeDefinition($builder->build());
-
-		if(($tags = Config::get_safe("bbtags", [])) && !empty($tags)){
-			foreach($tags as $tag => $content){
-				$builder = new JBBCode\CodeDefinitionBuilder($tag, $content);
-				$parser->addCodeDefinition($builder->build());
+		
+		// Process Markdown - Headers (must be at start of line)
+		$c = preg_replace('/^######\s+(.+)$/m', '<h6>$1</h6>', $c);
+		$c = preg_replace('/^#####\s+(.+)$/m', '<h5>$1</h5>', $c);
+		$c = preg_replace('/^####\s+(.+)$/m', '<h4>$1</h4>', $c);
+		$c = preg_replace('/^###\s+(.+)$/m', '<h3>$1</h3>', $c);
+		$c = preg_replace('/^##\s+(.+)$/m', '<h2>$1</h2>', $c);
+		$c = preg_replace('/^#\s+(.+)$/m', '<h1>$1</h1>', $c);
+		
+		// Markdown - Bold (**text** or __text__)
+		$c = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $c);
+		$c = preg_replace('/__(.+?)__/s', '<strong>$1</strong>', $c);
+		
+		// Markdown - Italic (*text* or _text_) - but preserve single * for legacy bold
+		$c = preg_replace('/_([^_]+)_/', '<em>$1</em>', $c);
+		// Single * bold (legacy from old system - kept for backwards compatibility)
+		$c = preg_replace('/\*([^\*\n]+)\*/', '<strong>$1</strong>', $c);
+		
+		// Markdown - Strikethrough (~~text~~)
+		$c = preg_replace('/~~(.+?)~~/s', '<del>$1</del>', $c);
+		
+		// Markdown - Links [text](url)
+		$c = preg_replace('/\[([^\]]+)\]\(([^\)]+)\)/', '<a href="$2" target="_blank">$1</a>', $c);
+		
+		// Markdown - Images ![alt](url)
+		$c = preg_replace('/!\[([^\]]*)\]\(([^\)]+)\)/', '<img src="$2" alt="$1">', $c);
+		
+		// Markdown - Horizontal rule
+		$c = preg_replace('/^(\-\-\-+|___+|\*\*\*+)$/m', '<hr>', $c);
+		
+		// Markdown - Blockquotes
+		$c = preg_replace('/^&gt;\s+(.+)$/m', '<blockquote>$1</blockquote>', $c);
+		
+		// Markdown - Unordered lists
+		$c = preg_replace_callback('/((?:^[\*\-\+]\s+.+$\n?)+)/m', function($matches) {
+			$items = preg_replace('/^[\*\-\+]\s+(.+)$/m', '<li>$1</li>', $matches[1]);
+			return '<ul>' . $items . '</ul>';
+		}, $c);
+		
+		// Markdown - Ordered lists
+		$c = preg_replace_callback('/((?:^\d+\.\s+.+$\n?)+)/m', function($matches) {
+			$items = preg_replace('/^\d+\.\s+(.+)$/m', '<li>$1</li>', $matches[1]);
+			return '<ol>' . $items . '</ol>';
+		}, $c);
+		
+		// Markdown - Tables
+		$c = preg_replace_callback('/(\|.+\|.*\n\|[\s\-\|:]+\|.*\n(?:\|.+\|.*\n?)*)/m', function($matches) {
+			$table = $matches[1];
+			$lines = explode("\n", trim($table));
+			
+			if(count($lines) < 3) return $matches[0];
+			
+			$header = array_shift($lines);
+			$separator = array_shift($lines);
+			
+			// Parse header
+			$headers = array_map('trim', explode('|', trim($header, '|')));
+			$html = '<table><thead><tr>';
+			foreach($headers as $h) {
+				$html .= '<th>' . $h . '</th>';
 			}
+			$html .= '</tr></thead><tbody>';
+			
+			// Parse rows
+			foreach($lines as $line) {
+				if(empty(trim($line))) continue;
+				$cells = array_map('trim', explode('|', trim($line, '|')));
+				$html .= '<tr>';
+				foreach($cells as $cell) {
+					$html .= '<td>' . $cell . '</td>';
+				}
+				$html .= '</tr>';
+			}
+			$html .= '</tbody></table>';
+			
+			return $html;
+		}, $c);
+		
+		// Original text processing - Quotes replacement
+		$c = preg_replace('/&quot;([^&]+)&quot;/', "„$1\"", $c);
+		
+		// Original text processing - Auto-linking URLs (if not already in a link)
+		$c = preg_replace('/(?<!href=&quot;|src=&quot;)(https?\:\/\/[^\s&<]+)/', '<a href="$1" target="_blank">$1</a>', $c);
+		
+		// Original text processing - Hashtags
+		$c = preg_replace('/(\#[A-Za-z0-9-_]+)(\s|$|&)/', '<span class="tag">$1</span>$2', $c);
+		
+		// Convert line breaks to <br> (but not inside block elements)
+		$c = nl2br($c);
+		
+		// Restore code blocks
+		foreach($code_blocks as $placeholder => $code) {
+			$c = str_replace(htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8'), $code, $c);
 		}
-
-		$parser->parse($c);
-
-		// Visit every text node
-		$parser->accept(new class implements \JBBCode\NodeVisitor{
-			function visitDocumentElement(\JBBCode\DocumentElement $documentElement){
-				foreach($documentElement->getChildren() as $child) {
-					$child->accept($this);
-				}
-			}
-
-			function visitTextNode(\JBBCode\TextNode $textNode){
-				$c = $textNode->getValue();
-				$c = preg_replace('/\"([^\"]+)\"/i', "„$1\"", $c);
-				$c = htmlentities($c);
-				$c = preg_replace('/\*([^\*]+)\*/i', "<strong>$1</strong>", $c);
-				$c = preg_replace('/(https?\:\/\/[^\" \n]+)/i', "<a href=\"\\0\" target=\"_blank\">\\0</a>", $c);
-				$c = preg_replace('/(\#[A-Za-z0-9-_]+)(\s|$)/i', "<span class=\"tag\">\\1</span>\\2", $c);
-				$c = nl2br($c);
-				$textNode->setValue($c);
-			}
-
-			function visitElementNode(\JBBCode\ElementNode $elementNode){
-				/* We only want to visit text nodes within elements if the element's
-				 * code definition allows for its content to be parsed.
-				 */
-				if ($elementNode->getCodeDefinition()->parseContent()) {
-					foreach ($elementNode->getChildren() as $child) {
-						$child->accept($this);
-					}
-				}
-			}
-		});
-
-		return $parser->getAsHtml();
+		
+		return $c;
 	}
 
 	private static function raw_data($raw_input){
@@ -250,15 +325,45 @@ class Post
 	}
 
 	public static function delete($r){
-    self::login_protected();
+		self::login_protected();
 
-    DB::get_instance()->query("
-        DELETE FROM `posts`
-        WHERE `id` = ?
-    ", $r["id"]);
+		// Move to trash (status=2) instead of permanent delete
+		DB::get_instance()->query("
+			UPDATE `posts`
+			SET `status` = 2
+			WHERE `id` = ?
+			AND `status` <> 5
+		", $r["id"]);
 
-    return true;
-}
+		return true;
+	}
+
+	public static function restore($r){
+		self::login_protected();
+
+		// Restore from trash (set status back to 1)
+		DB::get_instance()->query("
+			UPDATE `posts`
+			SET `status` = 1
+			WHERE `id` = ?
+			AND `status` = 2
+		", $r["id"]);
+
+		return true;
+	}
+
+	public static function permanent_delete($r){
+		self::login_protected();
+
+		// Permanently delete from database
+		DB::get_instance()->query("
+			DELETE FROM `posts`
+			WHERE `id` = ?
+			AND `status` = 2
+		", $r["id"]);
+
+		return true;
+	}
 
 
 	public static function edit_data($r){
@@ -498,6 +603,9 @@ class Post
 			$person = $r["filter"]["person"];
 		}
 
+		// Check if we're showing trash
+		$show_trash = isset($r["filter"]["trash"]) && $r["filter"]["trash"] == "true";
+
 		if (DB::connection() === 'sqlite') {
 			$datetime = "strftime('%d %m %Y %H:%M', `posts`.`datetime`)";
 		} else if (DB::connection() === 'postgres') {
@@ -511,7 +619,7 @@ class Post
 		return DB::get_instance()->query("
 			SELECT
 				`id`, `text`, `feeling`, `persons`, `location`, `privacy`, `content_type`, `content`,
-				$datetime AS `datetime`, (`status` <> 1) AS `is_hidden`
+				$datetime AS `datetime`, (`status` <> 1) AS `is_hidden`, (`status` = 2) AS `is_trashed`
 			FROM `posts`
 			WHERE ".
 				(!User::is_logged_in() ? (User::is_visitor() ? "`privacy` IN ('public', 'friends') AND " : "`privacy` = 'public' AND ") : "").
@@ -521,7 +629,7 @@ class Post
 				($tag ? "`plain_text` $like_match AND " : "").
 				($loc ? "`location` $like_match AND " : "").
 				($person ? "`persons` $like_match AND " : "").
-				"`status` <> 5
+				($show_trash ? "`status` = 2" : "`status` <> 5 AND `status` <> 2")."
 			ORDER BY `posts`.`datetime` ".(@$r["sort"] == 'reverse' ? "ASC" : "DESC")."
 			LIMIT ? OFFSET ?
 			", $from, $to, $id, $tag, $loc, $person, $r["limit"], $r["offset"]
