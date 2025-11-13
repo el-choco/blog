@@ -1,9 +1,9 @@
 /* ============================================
    STICKY POSTS STYLING
    ============================================ */
-/* Diese Styles müssen in main.css oder als separate CSS-Datei eingebunden werden */
+/* These styles must be included in main.css or as a separate CSS file */
 
-/* Sticky Post Hervorhebung */
+/* Sticky post highlighting */
 .post_row.sticky {
 	position: relative;
 	border: 2px solid #ff0000 !important;
@@ -11,7 +11,7 @@
 	background: #fff;
 }
 
-/* Sticky Pin Icon oben rechts */
+/* Sticky pin icon top right */
 .post_row.sticky::before {
 	content: "📌";
 	position: absolute;
@@ -22,7 +22,7 @@
 	z-index: 5;
 }
 
-/* Sticky Badge neben dem Datum */
+/* Sticky badge next to date */
 .post_row.sticky .b_date::after {
 	content: " • Sticky";
 	color: #FFD700;
@@ -31,7 +31,7 @@
 	margin-left: 8px;
 }
 
-/* Alternative: Subtilere Variante */
+/* Alternative: More subtle variant */
 .post_row.sticky.subtle {
 	border-left: 3px solid #4CAF50 !important;
 	background: rgba(76, 175, 80, 0.02) !important;
@@ -45,12 +45,12 @@
 	opacity: 0.5;
 }
 
-/* Hover-Effekt für Sticky Posts */
+/* Hover effect for sticky posts */
 .post_row.sticky:hover {
 	box-shadow: 0 2px 12px rgba(255, 215, 0, 0.2) !important;
 }
 
-/* Responsive Anpassungen */
+/* Responsive adjustments */
 @media (max-width: 768px) {
 	.post_row.sticky::before {
 		font-size: 16px;
@@ -59,11 +59,11 @@
 	}
 	
 	.post_row.sticky .b_date::after {
-		display: none; /* Verstecke Text-Badge auf Mobil */
+		display: none; /* Hide text badge on mobile */
 	}
 }
 
-/* Sticky Button Styles im Dropdown */
+/* Sticky button styles in dropdown */
 .post_tools .sticky_post,
 .post_tools .unsticky_post {
 	color: #FFD700 !important;
@@ -75,7 +75,7 @@
 	background: rgba(255, 215, 0, 0.1) !important;
 }
 
-/* Animation beim Laden */
+/* Animation on load */
 .post_row.sticky {
 	animation: stickyHighlight 5s ease-in-out;
 }
