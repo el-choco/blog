@@ -10,80 +10,121 @@ class Post
 	}
 
 	private static function parse_content($c){
-		$parser = new JBBCode\Parser();
-		$parser->addCodeDefinitionSet(new JBBCode\DefaultCodeDefinitionSet());
+		// Step 1: Preserve HTML tags using unique placeholders
+		$html_placeholders = [];
+		$placeholder_counter = 0;
+		
+		// Preserve allowed HTML tags (a, img, center, div, span, etc.)
+		$c = preg_replace_callback('/<[^>]+>/i', function($matches) use (&$html_placeholders, &$placeholder_counter) {
+			$placeholder = '§§§HTML_' . $placeholder_counter . '§§§';
+			$html_placeholders[$placeholder] = $matches[0];
+			$placeholder_counter++;
+			return $placeholder;
+		}, $c);
 
-		if(Config::get("highlight")){
-			$c = str_replace("\t", "  ", $c);
-			$c = preg_replace("/\[code(?:=([^\[]+))?\]\s*?(?:\n|\r)?/i", '[code=$1]', $c);
-			$c = preg_replace("/\[\/code\]\s*?(?:\n|\r)?/i", '[/code]', $c);
+		// Step 2: Escape HTML entities (for non-tag content)
+		$c = htmlentities($c, ENT_QUOTES, 'UTF-8');
 
-			// Add code definiton
-			$parser->addCodeDefinition(new class extends \JBBCode\CodeDefinition {
-				public function __construct(){
-					parent::__construct();
-					$this->setTagName("code");
-					$this->setParseContent(false);
-					$this->setUseOption(true);
-				}
-
-				public function asHtml(\JBBCode\ElementNode $el){
-					$content = $this->getContent($el);
-					$class = $el->getAttribute()['code'];
-					return '<code class="'.$class.'">'.htmlentities($content).'</code>';
-				}
-			});
+		// Step 3: Unescape placeholders so we can work with them
+		foreach($html_placeholders as $placeholder => $html) {
+			$c = str_replace(htmlentities($placeholder), $placeholder, $c);
 		}
 
-		// Custom tags
-		$builder = new JBBCode\CodeDefinitionBuilder("goal", "<div class=\"b_goal star\">{param}</div>");
-		$parser->addCodeDefinition($builder->build());
+		// Step 4: Parse Markdown features
+		
+		// Code blocks (triple backticks) - must be processed before inline code
+		$c = preg_replace_callback('/```([a-zA-Z0-9_+-]*)\n(.*?)\n```/s', function($matches) {
+			$lang = $matches[1] ? htmlspecialchars($matches[1]) : '';
+			$code = $matches[2];
+			return '<code class="' . $lang . '">' . $code . '</code>';
+		}, $c);
 
-		$builder = new JBBCode\CodeDefinitionBuilder("goal", "<div class=\"b_goal {option}\">{param}</div>");
-		$builder->setUseOption(true);
-		$parser->addCodeDefinition($builder->build());
+		// Inline code (single backticks)
+		$c = preg_replace_callback('/`([^`]+)`/', function($matches) {
+			return '<code>' . $matches[1] . '</code>';
+		}, $c);
 
-		if(($tags = Config::get_safe("bbtags", [])) && !empty($tags)){
-			foreach($tags as $tag => $content){
-				$builder = new JBBCode\CodeDefinitionBuilder($tag, $content);
-				$parser->addCodeDefinition($builder->build());
+		// Headers (# ## ###)
+		$c = preg_replace('/^### (.+)$/m', '<h3>$1</h3>', $c);
+		$c = preg_replace('/^## (.+)$/m', '<h2>$1</h2>', $c);
+		$c = preg_replace('/^# (.+)$/m', '<h1>$1</h1>', $c);
+
+		// Bold - support both **text** and __text__
+		$c = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $c);
+		$c = preg_replace('/__(.+?)__/s', '<strong>$1</strong>', $c);
+
+		// Italic - support both *text* and _text_ (but not if already part of **)
+		$c = preg_replace('/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/s', '<em>$1</em>', $c);
+		$c = preg_replace('/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/s', '<em>$1</em>', $c);
+
+		// Strikethrough (~~text~~)
+		$c = preg_replace('/~~(.+?)~~/s', '<del>$1</del>', $c);
+
+		// Horizontal rules (---)
+		$c = preg_replace('/^---$/m', '<hr>', $c);
+
+		// Blockquotes (> text)
+		$c = preg_replace_callback('/^(&gt;|>) (.+)$/m', function($matches) {
+			return '<blockquote>' . $matches[2] . '</blockquote>';
+		}, $c);
+
+		// Unordered lists (- item or * item)
+		$c = preg_replace_callback('/(?:^|\n)((?:(?:^|\n)[-*] .+)+)/m', function($matches) {
+			$items = preg_replace('/^[-*] (.+)$/m', '<li>$1</li>', $matches[1]);
+			return "\n<ul>" . $items . "</ul>\n";
+		}, $c);
+
+		// Ordered lists (1. item)
+		$c = preg_replace_callback('/(?:^|\n)((?:(?:^|\n)\d+\. .+)+)/m', function($matches) {
+			$items = preg_replace('/^\d+\. (.+)$/m', '<li>$1</li>', $matches[1]);
+			return "\n<ol>" . $items . "</ol>\n";
+		}, $c);
+
+		// Tables (|col1|col2|)
+		$c = preg_replace_callback('/\n((?:\|.+\|\n?)+)/m', function($matches) {
+			$rows = explode("\n", trim($matches[1]));
+			$html = '<table border="1">';
+			foreach($rows as $i => $row) {
+				if(preg_match('/^\|[\s\-:|]+\|$/', $row)) {
+					// Skip separator rows like |---|---|
+					continue;
+				}
+				$cells = array_map('trim', explode('|', trim($row, '|')));
+				$tag = ($i === 0) ? 'th' : 'td';
+				$html .= '<tr>';
+				foreach($cells as $cell) {
+					$html .= "<$tag>$cell</$tag>";
+				}
+				$html .= '</tr>';
 			}
+			$html .= '</table>';
+			return "\n" . $html . "\n";
+		}, $c);
+
+		// Auto-link URLs (but not if already in <a> tags or placeholders)
+		$c = preg_replace_callback('/(https?\:\/\/[^\s<>"]+)/i', function($matches) {
+			// Don't link if it's inside a placeholder
+			if(strpos($matches[0], '§§§') !== false) {
+				return $matches[0];
+			}
+			return '<a href="' . $matches[0] . '" target="_blank">' . $matches[0] . '</a>';
+		}, $c);
+
+		// Convert quotes "text" to „text"
+		$c = preg_replace('/&quot;(.+?)&quot;/i', '„$1"', $c);
+
+		// Hashtags (#tag) to span.tag
+		$c = preg_replace('/(\#[A-Za-z0-9-_]+)(\s|$)/i', '<span class="tag">$1</span>$2', $c);
+
+		// Step 5: Convert line breaks
+		$c = nl2br($c);
+
+		// Step 6: Restore HTML placeholders
+		foreach($html_placeholders as $placeholder => $html) {
+			$c = str_replace($placeholder, $html, $c);
 		}
 
-		$parser->parse($c);
-
-		// Visit every text node
-		$parser->accept(new class implements \JBBCode\NodeVisitor{
-			function visitDocumentElement(\JBBCode\DocumentElement $documentElement){
-				foreach($documentElement->getChildren() as $child) {
-					$child->accept($this);
-				}
-			}
-
-			function visitTextNode(\JBBCode\TextNode $textNode){
-				$c = $textNode->getValue();
-				$c = preg_replace('/\"([^\"]+)\"/i', "„$1\"", $c);
-				$c = htmlentities($c);
-				$c = preg_replace('/\*([^\*]+)\*/i', "<strong>$1</strong>", $c);
-				$c = preg_replace('/(https?\:\/\/[^\" \n]+)/i', "<a href=\"\\0\" target=\"_blank\">\\0</a>", $c);
-				$c = preg_replace('/(\#[A-Za-z0-9-_]+)(\s|$)/i', "<span class=\"tag\">\\1</span>\\2", $c);
-				$c = nl2br($c);
-				$textNode->setValue($c);
-			}
-
-			function visitElementNode(\JBBCode\ElementNode $elementNode){
-				/* We only want to visit text nodes within elements if the element's
-				 * code definition allows for its content to be parsed.
-				 */
-				if ($elementNode->getCodeDefinition()->parseContent()) {
-					foreach ($elementNode->getChildren() as $child) {
-						$child->accept($this);
-					}
-				}
-			}
-		});
-
-		return $parser->getAsHtml();
+		return $c;
 	}
 
 	private static function raw_data($raw_input){
@@ -250,16 +291,95 @@ class Post
 	}
 
 	public static function delete($r){
-    self::login_protected();
+		self::login_protected();
 
-    DB::get_instance()->query("
-        DELETE FROM `posts`
-        WHERE `id` = ?
-    ", $r["id"]);
+		// Check if soft delete is enabled
+		if(Config::get_safe("soft_delete", true)){
+			// Soft delete: move to trash (status = 5)
+			DB::get_instance()->query("
+				UPDATE `posts`
+				SET `status` = 5
+				WHERE `id` = ?
+			", $r["id"]);
+		} else {
+			// Hard delete: permanently remove
+			self::permanent_delete($r);
+		}
 
-    return true;
-}
+		return true;
+	}
 
+	public static function trash($r){
+		self::login_protected();
+
+		// Move post to trash (status = 5)
+		DB::get_instance()->query("
+			UPDATE `posts`
+			SET `status` = 5
+			WHERE `id` = ?
+		", $r["id"]);
+
+		return true;
+	}
+
+	public static function restore($r){
+		self::login_protected();
+
+		// Restore post from trash (status = 1)
+		DB::get_instance()->query("
+			UPDATE `posts`
+			SET `status` = 1
+			WHERE `id` = ?
+			AND `status` = 5
+		", $r["id"]);
+
+		return true;
+	}
+
+	public static function permanent_delete($r){
+		self::login_protected();
+
+		// Get post content to find associated images
+		$post = DB::get_instance()->query("
+			SELECT `content_type`, `content`
+			FROM `posts`
+			WHERE `id` = ?
+		", $r["id"])->first();
+
+		// Delete associated images if configured
+		if(Config::get_safe("hard_delete_files", true) && $post){
+			if($post['content_type'] === 'img_link' || $post['content_type'] === 'link'){
+				// No local images to delete for external links
+			} else {
+				// Parse content for image references
+				$content = json_decode($post['content'], true);
+				if(is_array($content) && isset($content['images'])){
+					foreach($content['images'] as $image){
+						if(isset($image['path'])){
+							$image_path = PROJECT_PATH . $image['path'];
+							if(file_exists($image_path)){
+								@unlink($image_path);
+							}
+						}
+						if(isset($image['thumb'])){
+							$thumb_path = PROJECT_PATH . $image['thumb'];
+							if(file_exists($thumb_path)){
+								@unlink($thumb_path);
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Permanently delete the post
+		DB::get_instance()->query("
+			DELETE FROM `posts`
+			WHERE `id` = ?
+		", $r["id"]);
+
+		return true;
+	}
 
 	public static function edit_data($r){
 		self::login_protected();
