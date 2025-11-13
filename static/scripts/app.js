@@ -12,7 +12,7 @@ var isUploading = false;
 
 // Global helper functions for multi-upload
 function show_multi_upload_progress(currentIndex, total) {
-	var progressText = 'Lade Bild ' + currentIndex + ' von ' + total + '...';
+	var progressText = 'Uploading image ' + currentIndex + ' of ' + total + '...';
 	$('.e_loading .progress-text').text(progressText);
 }
 
@@ -25,7 +25,7 @@ function show_image_previews(files, container) {
 		var reader = new FileReader();
 		reader.onload = function(e) {
 			var previewHtml = '<div class="image-preview-item" data-index="' + index + '">' +
-				'<img src="' + e.target.result + '" alt="Bild ' + (index + 1) + '">' +
+				'<img src="' + e.target.result + '" alt="Image ' + (index + 1) + '">' +
 				'<div class="image-preview-overlay">' +
 				'<span class="image-number">' + (index + 1) + '</span>' +
 				'<button class="remove-image-btn" data-index="' + index + '">×</button>' +
@@ -67,7 +67,7 @@ function removeImageFromQueue(index) {
 
 function updateImageCounter() {
 	var count = uploadQueue.length;
-	var countText = count > 0 ? count + ' Bild' + (count > 1 ? 'er' : '') + ' ausgewählt (max. ' + maxImages + ')' : '';
+	var countText = count > 0 ? count + ' image' + (count > 1 ? 's' : '') + ' selected (max. ' + maxImages + ')' : '';
 	$('.image-count').text(countText);
 	
 	if (count > 0) {
@@ -99,7 +99,7 @@ function upload_multiple_images(files, modal, callback) {
 		show_multi_upload_progress(currentIndex, filesToUpload.length);
 		
 		if (file.type.match(/image/) === null) {
-			$("body").error_msg("Nur Bilder können hochgeladen werden.");
+			$("body").error_msg("Only images can be uploaded.");
 			uploadNext();
 			return;
 		}
@@ -133,7 +133,7 @@ function upload_multiple_images(files, modal, callback) {
 				uploadNext();
 			},
 			error: function() {
-				$("body").error_msg("Fehler beim Upload von Bild " + currentIndex);
+				$("body").error_msg("Error uploading image " + currentIndex);
 				uploadNext();
 			}
 		});
@@ -286,6 +286,7 @@ var cnt_funcs = {
 
 		return obj;
 	},
+	// Display ALL images, no limit
 	images: function(dataArray){
 		if (!Array.isArray(dataArray) || dataArray.length === 0) {
 			return $('<div></div>');
@@ -294,32 +295,22 @@ var cnt_funcs = {
 		var lightboxId = 'gallery-' + lightboxes++;
 		var galleryContainer = $('<div class="b_gallery"></div>');
 		var imageCount = dataArray.length;
-		var gridClass = 'gallery-grid-' + Math.min(imageCount, 10);
+		var gridClass = 'gallery-grid-' + imageCount;
 		galleryContainer.addClass(gridClass);
 		
+		// Display ALL images (no limit)
 		dataArray.forEach(function(imgData, index) {
 			var imgLink = $('<a class="b_gallery_item"></a>');
 			imgLink.attr("href", imgData.path);
 			imgLink.attr("data-lightbox", lightboxId);
-			imgLink.attr("data-title", "Bild " + (index + 1) + " von " + imageCount);
+			imgLink.attr("data-title", "Image " + (index + 1) + " of " + imageCount);
 			
 			var img = $('<img>');
 			img.attr("src", imgData.thumb);
-			img.attr("alt", "Bild " + (index + 1));
-			
-			if (imageCount > 4 && index === 3) {
-				var overlay = $('<div class="gallery-more-overlay">+' + (imageCount - 4) + '</div>');
-				imgLink.append(overlay);
-			}
+			img.attr("alt", "Image " + (index + 1));
 			
 			imgLink.append(img);
-			
-			if (index < 4) {
-				galleryContainer.append(imgLink);
-			} else {
-				imgLink.css('display', 'none');
-				galleryContainer.append(imgLink);
-			}
+			galleryContainer.append(imgLink);
 		});
 		
 		return galleryContainer;
@@ -617,7 +608,7 @@ $.fn.apply_edit = function(data){
 
 		var show_editable_gallery = function(images) {
 			var content = modal.find(".content").empty();
-			var clear = $('<button class="clear" title="Alle Bilder entfernen"></button>');
+			var clear = $('<button class="clear" title="Remove all images"></button>');
 			clear.click(remove_content);
 			
 			var galleryContainer = $('<div class="b_gallery_edit"></div>');
@@ -627,9 +618,9 @@ $.fn.apply_edit = function(data){
 				
 				var img = $('<img>');
 				img.attr("src", imgData.thumb || imgData.path);
-				img.attr("alt", "Bild " + (index + 1));
+				img.attr("alt", "Image " + (index + 1));
 				
-				var removeBtn = $('<button class="remove-gallery-image-btn" title="Dieses Bild entfernen">×</button>');
+				var removeBtn = $('<button class="remove-gallery-image-btn" title="Remove this image">×</button>');
 				removeBtn.attr('data-index', index);
 				removeBtn.click(function(e) {
 					e.preventDefault();
@@ -813,7 +804,7 @@ $.fn.apply_edit = function(data){
 				upload_image(files[0]);
 			} else {
 				if (modal.find('.multi-upload-info').length === 0) {
-					previewContainer.after('<div class="multi-upload-info"><span class="image-count"></span> - Klicke auf "Speichern" zum Hochladen</div>');
+					previewContainer.after('<div class="multi-upload-info"><span class="image-count"></span> - Click \'Save\' to upload</div>');
 				}
 				modal.find('.multi-upload-info').show();
 				updateImageCounter();
@@ -889,7 +880,7 @@ $.fn.apply_edit = function(data){
 	});
 };
 
-// Fill post data - MIT TOGGLE FIX
+// Fill post data - WITH TOGGLE FIX
 $.fn.post_fill = function(data){
 	var post = $(this);
 
@@ -943,11 +934,11 @@ $.fn.post_fill = function(data){
 
 	post.find(".b_date").attr("href", "#id="+data.id);
 
-	// ===== TOGGLE FIX - "MEHR ANZEIGEN" / "WENIGER ANZEIGEN" =====
+	// ===== TOGGLE FIX - "SHOW MORE" / "SHOW LESS" =====
 	var height = 200;
 	var textContainer = post.find(".b_text");
 	
-	// Entferne alte Buttons
+	// Remove old buttons
 	post.find(".show_more").remove();
 	textContainer.removeClass("text-collapsed");
 	
@@ -956,7 +947,7 @@ $.fn.post_fill = function(data){
 		textContainer.addClass("text-collapsed");
 		
 		var show_more = $('#prepared .show_more').clone();
-		show_more.text("Mehr anzeigen");
+		show_more.text("Show More");
 		show_more.attr("data-expanded", "false");
 		show_more.insertAfter(textContainer);
 		
@@ -967,16 +958,16 @@ $.fn.post_fill = function(data){
 				// Expand
 				textContainer.css("max-height", 'none');
 				textContainer.removeClass("text-collapsed");
-				$(this).text("Weniger anzeigen");
+				$(this).text("Show Less");
 				$(this).attr("data-expanded", "true");
 			} else {
 				// Collapse
 				textContainer.css("max-height", height+"px");
 				textContainer.addClass("text-collapsed");
-				$(this).text("Mehr anzeigen");
+				$(this).text("Show More");
 				$(this).attr("data-expanded", "false");
 				
-				// Smooth scroll zurück zum Post
+				// Smooth scroll back to post
 				$('html, body').animate({
 					scrollTop: post.offset().top - 100
 				}, 300);
@@ -1298,7 +1289,7 @@ $.fn.apply_post = function(){
 							post.attr("data-sticky", "0");
 						}
 						
-						var msg = data.is_sticky ? "Post als Sticky markiert! 📌" : "Sticky entfernt.";
+						var msg = data.is_sticky ? "Post marked as sticky! 📌" : "Sticky removed.";
 						if(typeof $("body").success_msg === "function"){
 							$("body").success_msg(msg);
 						} else {
@@ -1310,7 +1301,7 @@ $.fn.apply_post = function(){
 						}, 800);
 					},
 					error: function(){
-						$("body").error_msg("Fehler beim Sticky-Toggle");
+						$("body").error_msg("Error toggling sticky");
 					}
 				});
 			});
