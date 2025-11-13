@@ -114,18 +114,18 @@ if (Config::get_safe("version", false)) {
 		transform: scale(1.1);
 	}
 	textarea.e_text, textarea#postText {
-    height: 300px !important;
-    max-height: 300px !important;
-    overflow-y: auto !important;
-    resize: none !important; /* Kein Resize, dafür scrollen */
-}
+		height: 300px !important;
+		max-height: 300px !important;
+		overflow-y: auto !important;
+		resize: none !important; /* No resize, use scrolling instead */
+	}
 	</style>
 	<?php echo $styles_html; ?>
 </head>
 <body>
 	<div id="dd_mask" class="mask"></div>
 	<div id="prepared" style="display:none;">
-		<!-- Login Button -->
+		<!-- Show More Button -->
 		<a class="show_more"><?php echo __("Show More"); ?></a>
 
 		<!-- Login Button -->
@@ -197,8 +197,8 @@ if (Config::get_safe("version", false)) {
 			<li><a class="edit_post"><?php echo __("Edit Post"); ?></a></li>
 			<li><a class="edit_date"><?php echo __("Change Date"); ?></a></li>
 			<li>
-				<a class="sticky_post">📌 Als Sticky markieren</a>
-				<a class="unsticky_post">📌 Sticky entfernen</a>
+				<a class="sticky_post"><?php echo __("Mark as Sticky"); ?></a>
+				<a class="unsticky_post"><?php echo __("Remove Sticky"); ?></a>
 			</li>
 			<li>
 				<a class="hide"><?php echo __("Hide from Timeline"); ?></a>
@@ -230,76 +230,75 @@ if (Config::get_safe("version", false)) {
 							<textarea id="postText" class="e_text" placeholder="<?php echo __("What's on your mind?"); ?>"></textarea>
 						</div>
 
-						<!-- ===== NEU: Markdown Toolbar ===== -->
+						<!-- Markdown Toolbar -->
 						<div style="display:flex; justify-content: center; gap:6px; padding:8px 0; flex-wrap:wrap; border: 1px solid #b8daed; background: #fff; margin-bottom: 8px; border-radius: 15px;">
 							<span style="font-size: 11px; font-weight: bold; color: #0066cc; align-self: center; margin-right: 8px;">MARKDOWN:</span>
 							
-							<!-- Text Formatierung -->
-							<button type="button" class="markdown-btn" data-md="bold" title="Fett" style="font-weight:bold; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace;">**B**</button>
-							<button type="button" class="markdown-btn" data-md="italic" title="Kursiv" style="font-style:italic; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace;">*I*</button>
-							<button type="button" class="markdown-btn" data-md="strike" title="Durchgestrichen" style="text-decoration:line-through; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace;">~~S~~</button>
+							<!-- Text Formatting -->
+							<button type="button" class="markdown-btn" data-md="bold" title="<?php echo __("Bold"); ?>" style="font-weight:bold; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">B</button>
+							<button type="button" class="markdown-btn" data-md="italic" title="<?php echo __("Italic"); ?>" style="font-style:italic; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">I</button>
+							<button type="button" class="markdown-btn" data-md="strike" title="<?php echo __("Strikethrough"); ?>" style="text-decoration:line-through; padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">S</button>
 							
 							<span style="border-right: 1px solid #b8daed; margin: 0 4px;"></span>
 							
-							<!-- Überschriften -->
-							<button type="button" class="markdown-btn" data-md="h1" title="Überschrift 1" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;"># H1</button>
-							<button type="button" class="markdown-btn" data-md="h2" title="Überschrift 2" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;">## H2</button>
-							<button type="button" class="markdown-btn" data-md="h3" title="Überschrift 3" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;">### H3</button>
+							<!-- Headings -->
+							<button type="button" class="markdown-btn" data-md="h1" title="<?php echo __("Heading 1"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:13px; font-weight:bold;">H1</button>
+							<button type="button" class="markdown-btn" data-md="h2" title="<?php echo __("Heading 2"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:12px; font-weight:bold;">H2</button>
+							<button type="button" class="markdown-btn" data-md="h3" title="<?php echo __("Heading 3"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px; font-weight:bold;">H3</button>
 							
 							<span style="border-right: 1px solid #b8daed; margin: 0 4px;"></span>
 							
-							<!-- Links & Bilder -->
-							<button type="button" class="markdown-btn" data-md="link" title="Link" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">🔗</button>
-							<button type="button" class="markdown-btn" data-md="image" title="Bild" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">🖼️</button>
+							<!-- Links & Images -->
+							<button type="button" class="markdown-btn" data-md="link" title="<?php echo __("Link"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">🔗</button>
+							<button type="button" class="markdown-btn" data-md="image" title="<?php echo __("Image"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">🖼️</button>
 							
 							<span style="border-right: 1px solid #b8daed; margin: 0 4px;"></span>
 							
 							<!-- Code -->
-							<button type="button" class="markdown-btn" data-md="code" title="Inline Code" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;">`code`</button>
-							<button type="button" class="markdown-btn" data-md="codeblock" title="Code Block" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:10px;">```</button>
+							<button type="button" class="markdown-btn" data-md="code" title="<?php echo __("Inline Code"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:11px;">`code`</button>
+							<button type="button" class="markdown-btn" data-md="codeblock" title="<?php echo __("Code Block"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace; font-size:10px;">```</button>
 							
 							<span style="border-right: 1px solid #b8daed; margin: 0 4px;"></span>
 							
-							<!-- Listen & Zitate -->
-							<button type="button" class="markdown-btn" data-md="ul" title="Liste" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">• List</button>
-							<button type="button" class="markdown-btn" data-md="ol" title="Nummerierte Liste" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">1. List</button>
-							<button type="button" class="markdown-btn" data-md="quote" title="Zitat" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">&gt; Quote</button>
-							<button type="button" class="markdown-btn" data-md="hr" title="Horizontale Linie" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-family:monospace;">---</button>
-							<button type="button" class="markdown-btn" data-md="table" title="Tabelle" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">📊</button>
+							<!-- Lists & Quotes -->
+							<button type="button" class="markdown-btn" data-md="ul" title="<?php echo __("List"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">• <?php echo __("List"); ?></button>
+							<button type="button" class="markdown-btn" data-md="ol" title="<?php echo __("Numbered List"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">1. List</button>
+							<button type="button" class="markdown-btn" data-md="quote" title="<?php echo __("Quote"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">💬</button>
+							<button type="button" class="markdown-btn" data-md="hr" title="<?php echo __("Horizontal Line"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px; font-size:11px;">---</button>
+							<button type="button" class="markdown-btn" data-md="table" title="<?php echo __("Table"); ?>" style="padding:6px 10px; border:1px solid #b8daed; background:#fff; cursor:pointer; border-radius:10px;">📊</button>
 						</div>
-						<!-- ===== HTML Toolbar ===== -->
+						<!-- HTML Toolbar -->
 						<div style="display:flex; justify-content: center; gap:6px; padding:8px 0; flex-wrap:wrap; border: 1px solid #d4edda; background: #fff; margin-bottom: 8px; border-radius: 15px;">
 							<span style="font-size: 11px; font-weight: bold; color: #28a745; align-self: center; margin-right: 8px;">HTML:</span>
 							
-							<!-- Ausrichtung -->
-							<button type="button" class="html-btn" data-html="center" title="Zentrieren" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">⬆️ Center</button>
-							<button type="button" class="html-btn" data-html="right" title="Rechtsbündig" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">➡️ Right</button>
-							<button type="button" class="html-btn" data-html="left" title="Linksbündig" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">⬅️ Left</button>
+							<!-- Alignment -->
+							<button type="button" class="html-btn" data-html="center" title="<?php echo __("Center"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">⬆️ Center</button>
+							<button type="button" class="html-btn" data-html="right" title="<?php echo __("Right Align"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">➡️ Right</button>
+							<button type="button" class="html-btn" data-html="left" title="<?php echo __("Left Align"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">⬅️ Left</button>
 							
 							<span style="border-right: 1px solid #28a745; margin: 0 4px;"></span>
 							
-							<!-- Farbe & Hervorhebung -->
-							<button type="button" class="html-btn" data-html="color" title="Farbe" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">🎨 Color</button>
-							<button type="button" class="html-btn" data-html="mark" title="Markieren" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">✨ Mark</button>
+							<!-- Color & Highlighting -->
+							<button type="button" class="html-btn" data-html="color" title="<?php echo __("Color"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">🎨 <?php echo __("Color"); ?></button>
+							<button type="button" class="html-btn" data-html="mark" title="<?php echo __("Highlight"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">✨ Mark</button>
 							
 							<span style="border-right: 1px solid #28a745; margin: 0 4px;"></span>
 							
-							<!-- Textgröße -->
-							<button type="button" class="html-btn" data-html="small" title="Klein" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; font-size:9px;">Small</button>
-							<button type="button" class="html-btn" data-html="big" title="Groß" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; font-size:14px; font-weight:bold;">Big</button>
+							<!-- Text Size -->
+							<button type="button" class="html-btn" data-html="small" title="<?php echo __("Small"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; font-size:9px;">Small</button>
+							<button type="button" class="html-btn" data-html="big" title="<?php echo __("Large"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; font-size:14px;">Big</button>
 							
 							<span style="border-right: 1px solid #28a745; margin: 0 4px;"></span>
 							
-							<!-- Spezial -->
-							<button type="button" class="html-btn" data-html="underline" title="Unterstrichen" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; text-decoration:underline;">U</button>
-							<button type="button" class="html-btn" data-html="sup" title="Hochgestellt" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">x<sup>2</sup></button>
-							<button type="button" class="html-btn" data-html="sub" title="Tiefgestellt" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">H<sub>2</sub>O</button>
-							<button type="button" class="html-btn" data-html="spoiler" title="Spoiler" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">👁️ Spoiler</button>
+							<!-- Special -->
+							<button type="button" class="html-btn" data-html="underline" title="<?php echo __("Underline"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px; text-decoration:underline; font-size:11px;">U</button>
+							<button type="button" class="html-btn" data-html="sup" title="<?php echo __("Superscript"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">x<sup>2</sup></button>
+							<button type="button" class="html-btn" data-html="sub" title="<?php echo __("Subscript"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">H<sub>2</sub>O</button>
+							<button type="button" class="html-btn" data-html="spoiler" title="<?php echo __("Spoiler"); ?>" style="padding:6px 10px; border:1px solid #28a745; background:#fff; cursor:pointer; border-radius:10px;">👁️ Spoiler</button>
 						</div>
-						<!-- Emoji Picker -->
-						<!-- Emoji Picker mit 44 modernen Emojis -->
+						<!-- Emoji Picker with 44 modern emojis -->
 						<div id="emojiPicker" style="display:flex; flex-wrap:wrap; justify-content: space-around; gap:4px; padding:6px; border-radius:8px; background:#fff; border:1px solid #ddd; font-size:22px;">
-							<!-- Gesichter & Emotionen -->
+							<!-- Faces & Emotions -->
 							<span class="emoji" data-emoji="😀">😀</span>
 							<span class="emoji" data-emoji="😃">😃</span>
 							<span class="emoji" data-emoji="😄">😄</span>
@@ -466,7 +465,7 @@ if (Config::get_safe("version", false)) {
 			<div class="b_content"></div>
 		</div>
 
-		<!-- Pirvacy Settings -->
+		<!-- Privacy Settings -->
 		<ul class="b_dropdown privacy_settings">
 			<li><a class="set" data-val="public"><i class="public"></i><?php echo __("Public"); ?></a></li>
 			<li><a class="set" data-val="friends"><i class="friends"></i><?php echo __("Friends"); ?></a></li>
@@ -509,19 +508,18 @@ if (Config::get_safe("version", false)) {
 
 	<script src="static/scripts/lightbox.js"></script>
 	<script src="static/scripts/datepick.js<?php echo $versionSuffix?>"></script>
-	<!-- <script src="static/scripts/autosize.js"></script>-->
 	<?php echo Config::get_safe("highlight", false) ? '<script src="static/scripts/highlight-10.1.2.min.js"></script><script>hljs.initHighlightingOnLoad();</script>'.PHP_EOL : ''; ?>
-	<script src="static/scripts/app.js"></script>
+	<script src="static/scripts/app.js<?php echo $versionSuffix?>"></script>
 	<?php echo $scripts_html; ?>
 
 <script>
 // ============================================
-// Markdown & Emoji Editor Funktionalität
+// Markdown & Emoji Editor Functionality
 // ============================================
 (function(){
 	'use strict';
 
-	// Helper: Finde die Textarea im aktuellen Kontext
+	// Helper: Find textarea in current context
 	function findTextarea(element) {
 		let scope = element.closest('.modal') || element.closest('.edit_form') || element.closest('.b_post') || document;
 		return scope.querySelector('textarea#postText') 
@@ -530,7 +528,7 @@ if (Config::get_safe("version", false)) {
 			|| document.querySelector('textarea#postText');
 	}
 
-	// Füge Text an Cursor-Position ein
+	// Insert text at cursor position
 	function insertAtCursor(textarea, textBefore, textAfter) {
 		if (!textarea) return;
 		
@@ -542,65 +540,65 @@ if (Config::get_safe("version", false)) {
 		const newText = text.substring(0, start) + textBefore + selectedText + textAfter + text.substring(end);
 		textarea.value = newText;
 		
-		// Setze Cursor-Position
+		// Set cursor position
 		const newPos = start + textBefore.length + selectedText.length;
 		textarea.selectionStart = textarea.selectionEnd = newPos;
 		textarea.focus();
 		
-		// Trigger Events für andere Scripts
+		// Trigger events for other scripts
 		textarea.dispatchEvent(new Event('input', { bubbles: true }));
 		textarea.dispatchEvent(new Event('change', { bubbles: true }));
 	}
 
-		// Emoji-Mapping: Emoji → Text-Code (44 Emojis)
-		const emojiToCode = {
-			'😀': ':grinning:',
-			'😃': ':smiley:',
-			'😄': ':smile:',
-			'😁': ':grin:',
-			'😆': ':laughing:',
-			'😂': ':joy:',
-			'🤣': ':rofl:',
-			'😊': ':blush:',
-			'😇': ':innocent:',
-			'😍': ':heart_eyes:',
-			'🥰': ':smiling_face_with_hearts:',
-			'😘': ':kissing_heart:',
-			'😗': ':kissing:',
-			'😎': ':sunglasses:',
-			'🤩': ':star_struck:',
-			'🤗': ':hugging:',
-			'🤔': ':thinking:',
-			'😐': ':neutral_face:',
-			'😑': ':expressionless:',
-			'😶': ':no_mouth:',
-			'🙄': ':eye_roll:',
-			'😏': ':smirk:',
-			'😣': ':persevere:',
-			'😥': ':disappointed_relieved:',
-			'😮': ':open_mouth:',
-			'🤐': ':zipper_mouth:',
-			'😯': ':hushed:',
-			'😪': ':sleepy:',
-			'😫': ':tired_face:',
-			'🥱': ':yawning:',
-			'😴': ':sleeping:',
-			'😌': ':relieved:',
-			'😛': ':stuck_out_tongue:',
-			'😜': ':stuck_out_tongue_winking_eye:',
-			'😝': ':stuck_out_tongue_closed_eyes:',
-			'🤤': ':drooling:',
-			'😒': ':unamused:',
-			'😓': ':sweat:',
-			'😔': ':pensive:',
-			'😕': ':confused:',
-			'🙃': ':upside_down:',
-			'🫠': ':melting:',
-			'🤑': ':money_mouth:',
-			'😲': ':astonished:'
-		};
+	// Emoji mapping: Emoji → Text code (44 emojis)
+	const emojiToCode = {
+		'😀': ':grinning:',
+		'😃': ':smiley:',
+		'😄': ':smile:',
+		'😁': ':grin:',
+		'😆': ':laughing:',
+		'😂': ':joy:',
+		'🤣': ':rofl:',
+		'😊': ':blush:',
+		'😇': ':innocent:',
+		'😍': ':heart_eyes:',
+		'🥰': ':smiling_face_with_hearts:',
+		'😘': ':kissing_heart:',
+		'😗': ':kissing:',
+		'😎': ':sunglasses:',
+		'🤩': ':star_struck:',
+		'🤗': ':hugging:',
+		'🤔': ':thinking:',
+		'😐': ':neutral_face:',
+		'😑': ':expressionless:',
+		'😶': ':no_mouth:',
+		'🙄': ':eye_roll:',
+		'😏': ':smirk:',
+		'😣': ':persevere:',
+		'😥': ':disappointed_relieved:',
+		'😮': ':open_mouth:',
+		'🤐': ':zipper_mouth:',
+		'😯': ':hushed:',
+		'😪': ':sleepy:',
+		'😫': ':tired_face:',
+		'🥱': ':yawning:',
+		'😴': ':sleeping:',
+		'😌': ':relieved:',
+		'😛': ':stuck_out_tongue:',
+		'😜': ':stuck_out_tongue_winking_eye:',
+		'😝': ':stuck_out_tongue_closed_eyes:',
+		'🤤': ':drooling:',
+		'😒': ':unamused:',
+		'😓': ':sweat:',
+		'😔': ':pensive:',
+		'😕': ':confused:',
+		'🙃': ':upside_down:',
+		'🫠': ':melting:',
+		'🤑': ':money_mouth:',
+		'😲': ':astonished:'
+	};
 
-	// Emoji Click Handler
+	// Emoji click handler
 	document.addEventListener('click', function(e) {
 		const emojiEl = e.target.closest('.emoji');
 		if (!emojiEl) return;
@@ -610,123 +608,124 @@ if (Config::get_safe("version", false)) {
 		const textarea = findTextarea(emojiEl);
 		if (!textarea) return;
 
-		// Füge Emoji-Code ein
+		// Insert emoji code
 		const emojiCode = emojiToCode[emojiChar] || emojiChar;
 		insertAtCursor(textarea, emojiCode, '');
 	});
 
-	// Verhindere Doppel-Klicks
+	// Prevent double clicks
 	document.addEventListener('dblclick', function(e) {
 		if (e.target.closest('.emoji') || e.target.closest('.markdown-btn') || e.target.closest('.html-btn')) {
 			e.preventDefault();
 		}
 	});
-    // ===== MARKDOWN BUTTON HANDLER (NEU!) =====
-document.addEventListener('click', function(e) {
-	const btn = e.target.closest('.markdown-btn');
-	if (!btn) return;
-	
-	e.preventDefault();
-	const mdType = btn.getAttribute('data-md');
-	const textarea = findTextarea(btn);
-	if (!textarea) return;
-	
-	const start = textarea.selectionStart;
-	const end = textarea.selectionEnd;
-	const selectedText = textarea.value.substring(start, end);
-	
-	let before = '', after = '';
-	
-	switch(mdType) {
-		case 'bold':
-			before = '**';
-			after = '**';
-			break;
-		case 'italic':
-			before = '*';
-			after = '*';
-			break;
-		case 'strike':
-			before = '~~';
-			after = '~~';
-			break;
-		case 'h1':
-			before = '# ';
-			after = '';
-			break;
-		case 'h2':
-			before = '## ';
-			after = '';
-			break;
-		case 'h3':
-			before = '### ';
-			after = '';
-			break;
-		case 'link':
-			const url = prompt('URL eingeben:', 'https://');
-			if (url) {
-				if (selectedText) {
-					before = '[';
-					after = '](' + url + ')';
-				} else {
-					before = '[Link Text](' + url + ')';
+
+	// Markdown button handler
+	document.addEventListener('click', function(e) {
+		const btn = e.target.closest('.markdown-btn');
+		if (!btn) return;
+		
+		e.preventDefault();
+		const mdType = btn.getAttribute('data-md');
+		const textarea = findTextarea(btn);
+		if (!textarea) return;
+		
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const selectedText = textarea.value.substring(start, end);
+		
+		let before = '', after = '';
+		
+		switch(mdType) {
+			case 'bold':
+				before = '**';
+				after = '**';
+				break;
+			case 'italic':
+				before = '*';
+				after = '*';
+				break;
+			case 'strike':
+				before = '~~';
+				after = '~~';
+				break;
+			case 'h1':
+				before = '# ';
+				after = '';
+				break;
+			case 'h2':
+				before = '## ';
+				after = '';
+				break;
+			case 'h3':
+				before = '### ';
+				after = '';
+				break;
+			case 'link':
+				const url = prompt('<?php echo __("Enter URL"); ?>', 'https://');
+				if (url) {
+					if (selectedText) {
+						before = '[';
+						after = '](' + url + ')';
+					} else {
+						before = '[Link Text](' + url + ')';
+						after = '';
+					}
+				}
+				break;
+			case 'image':
+				const imgUrl = prompt('<?php echo __("Enter Image URL"); ?>', 'https://');
+				if (imgUrl) {
+					const alt = prompt('<?php echo __("Alt Text (optional)"); ?>', '<?php echo __("Image"); ?>');
+					before = '![' + (alt || '<?php echo __("Image"); ?>') + '](' + imgUrl + ')';
 					after = '';
 				}
-			}
-			break;
-		case 'image':
-			const imgUrl = prompt('Bild-URL eingeben:', 'https://');
-			if (imgUrl) {
-				const alt = prompt('Alt-Text (optional):', 'Bild');
-				before = '![' + (alt || 'Bild') + '](' + imgUrl + ')';
+				break;
+			case 'code':
+				before = '`';
+				after = '`';
+				break;
+			case 'codeblock':
+				const lang = prompt('<?php echo __("Language (optional)"); ?>', '');
+				before = '\n```' + (lang || '') + '\n';
+				after = '\n```\n';
+				break;
+			case 'ul':
+				before = '\n- ';
+				after = '\n- Item 2\n- Item 3\n';
+				break;
+			case 'ol':
+				before = '\n1. ';
+				after = '\n2. Item 2\n3. Item 3\n';
+				break;
+			case 'quote':
+				before = '\n> ';
+				after = '\n';
+				break;
+			case 'hr':
+				before = '\n---\n';
 				after = '';
-			}
-			break;
-		case 'code':
-			before = '`';
-			after = '`';
-			break;
-		case 'codeblock':
-			const lang = prompt('Sprache (optional, z.B. javascript):', '');
-			before = '\n```' + (lang || '') + '\n';
-			after = '\n```\n';
-			break;
-		case 'ul':
-			before = '\n- ';
-			after = '\n- Item 2\n- Item 3\n';
-			break;
-		case 'ol':
-			before = '\n1. ';
-			after = '\n2. Item 2\n3. Item 3\n';
-			break;
-		case 'quote':
-			before = '\n> ';
-			after = '\n';
-			break;
-		case 'hr':
-			before = '\n---\n';
-			after = '';
-			break;
-		case 'table':
-			before = '\n| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n';
-			after = '';
-			break;
-	}
-	
-	if (before !== '' || after !== '') {
-		const newText = textarea.value.substring(0, start) + before + selectedText + after + textarea.value.substring(end);
-		textarea.value = newText;
+				break;
+			case 'table':
+				before = '\n| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |\n| Cell 3   | Cell 4   |\n';
+				after = '';
+				break;
+		}
 		
-		const newPos = start + before.length + selectedText.length;
-		textarea.selectionStart = textarea.selectionEnd = newPos;
-		textarea.focus();
-		
-		textarea.dispatchEvent(new Event('input', { bubbles: true }));
-		textarea.dispatchEvent(new Event('change', { bubbles: true }));
-	}
-});
+		if (before !== '' || after !== '') {
+			const newText = textarea.value.substring(0, start) + before + selectedText + after + textarea.value.substring(end);
+			textarea.value = newText;
+			
+			const newPos = start + before.length + selectedText.length;
+			textarea.selectionStart = textarea.selectionEnd = newPos;
+			textarea.focus();
+			
+			textarea.dispatchEvent(new Event('input', { bubbles: true }));
+			textarea.dispatchEvent(new Event('change', { bubbles: true }));
+		}
+	});
 
-	// ===== HTML BUTTON HANDLER =====
+	// HTML button handler
 	document.addEventListener('click', function(e) {
 		const btn = e.target.closest('.html-btn');
 		if (!btn) return;
@@ -756,7 +755,7 @@ document.addEventListener('click', function(e) {
 				after = '</div>';
 				break;
 			case 'color':
-				const color = prompt('Farbe eingeben (z.B. red, #ff0000):', 'red');
+				const color = prompt('<?php echo __("Enter Color"); ?>', 'red');
 				if (color) {
 					before = '<span style="color:' + color + '">';
 					after = '</span>';
@@ -787,9 +786,9 @@ document.addEventListener('click', function(e) {
 				after = '</sub>';
 				break;
 			case 'spoiler':
-				const title = prompt('Spoiler Titel:', 'Klicken zum Anzeigen');
+				const title = prompt('<?php echo __("Spoiler Title"); ?>', '<?php echo __("Click to Show"); ?>');
 				if (title !== null) {
-					before = '<details><summary>' + (title || 'Klicken zum Anzeigen') + '</summary>\n';
+					before = '<details><summary>' + (title || '<?php echo __("Click to Show"); ?>') + '</summary>\n';
 					after = '\n</details>';
 				}
 				break;
@@ -807,7 +806,7 @@ document.addEventListener('click', function(e) {
 			textarea.dispatchEvent(new Event('change', { bubbles: true }));
 		}
 	});
-	console.log("✅ Markdown, HTML & Emoji Editor initialisiert");
+	console.log("✅ Markdown, HTML & Emoji Editor initialized");
 })();
 </script>
 </body>
