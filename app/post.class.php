@@ -16,7 +16,7 @@ class Post
 		
 		// Preserve allowed HTML tags (a, img, center, div, span, etc.)
 		$c = preg_replace_callback('/<[^>]+>/i', function($matches) use (&$html_placeholders, &$placeholder_counter) {
-			$placeholder = '§§§HTML_' . $placeholder_counter . '§§§';
+			$placeholder = '§§§HTMLTAG' . $placeholder_counter . 'END§§§';
 			$html_placeholders[$placeholder] = $matches[0];
 			$placeholder_counter++;
 			return $placeholder;
@@ -53,9 +53,9 @@ class Post
 		$c = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $c);
 		$c = preg_replace('/__(.+?)__/s', '<strong>$1</strong>', $c);
 
-		// Italic - support both *text* and _text_ (but not if already part of **)
-		$c = preg_replace('/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/s', '<em>$1</em>', $c);
-		$c = preg_replace('/(?<!_)_(?!_)(.+?)(?<!_)_(?!_)/s', '<em>$1</em>', $c);
+		// Italic - support both *text* and _text_ (but not if already part of ** or inside placeholders)
+		$c = preg_replace('/(?<!\*)\*(?!\*)([^§]+?)(?<!\*)\*(?!\*)/s', '<em>$1</em>', $c);
+		$c = preg_replace('/(?<!_)_(?!_)([^§]+?)(?<!_)_(?!_)/s', '<em>$1</em>', $c);
 
 		// Strikethrough (~~text~~)
 		$c = preg_replace('/~~(.+?)~~/s', '<del>$1</del>', $c);

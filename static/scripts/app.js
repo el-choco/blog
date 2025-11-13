@@ -1239,7 +1239,7 @@ $.fn.apply_post = function(){
 						dataType: "json",
 						url: "ajax.php",
 						data: {
-							action: "delete",
+							action: "permanent_delete",
 							id: post_id
 						},
 						success: function(data){
@@ -1255,6 +1255,61 @@ $.fn.apply_post = function(){
 				});
 
 				$("body").append(modal);
+			});
+
+			$(o_mask).find(".trash_post").click(function(){
+				$("#dd_mask").click();
+
+				var modal = $('#prepared .trash_modal').clone();
+				$("body").css("overflow", "hidden");
+
+				modal.find(".close").click(function(){
+					modal.close();
+				});
+
+				modal.find(".trash").click(function(){
+					$.post({
+						dataType: "json",
+						url: "ajax.php",
+						data: {
+							action: "trash",
+							id: post_id
+						},
+						success: function(data){
+							if(data.error){
+								modal.find(".modal-body").error_msg(data.msg);
+								return ;
+							}
+
+							post.remove();
+							modal.close();
+						}
+					});
+				});
+
+				$("body").append(modal);
+			});
+
+			$(o_mask).find(".restore_post").click(function(){
+				$("#dd_mask").click();
+
+				$.post({
+					dataType: "json",
+					url: "ajax.php",
+					data: {
+						action: "restore",
+						id: post_id
+					},
+					success: function(data){
+						if(data.error){
+							alert(data.msg);
+							return ;
+						}
+
+						// Reload the page to show the restored post
+						location.reload();
+					}
+				});
 			});
 
 			if(post.hasClass("sticky") || post.attr("data-sticky") === "1") {
@@ -1305,6 +1360,12 @@ $.fn.apply_post = function(){
 					}
 				});
 			});
+
+			// Show/hide trash, restore, and delete buttons
+			// For now, always show trash and hide restore (since trashed posts are not loaded)
+			$(o_mask).find(".trash_post").show();
+			$(o_mask).find(".restore_post").hide();
+			$(o_mask).find(".delete_post").show();
 		});
 	});
 };
