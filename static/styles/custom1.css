@@ -317,7 +317,39 @@
 	grid-column: 3 / 4;
 }
 
-/* "+X" overlay for more than 10 images (on last visible image) */
+/* 11 Images - 4 + 4 + 3 */
+.b_gallery.gallery-grid-11 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-11 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+.b_gallery.gallery-grid-11 .b_gallery_item:nth-child(9) {
+	grid-column: 1 / 2;
+}
+
+.b_gallery.gallery-grid-11 .b_gallery_item:nth-child(10) {
+	grid-column: 2 / 3;
+}
+
+.b_gallery.gallery-grid-11 .b_gallery_item:nth-child(11) {
+	grid-column: 3 / 4;
+}
+
+/* 12 Images - 4 + 4 + 4 (perfect grid) */
+.b_gallery.gallery-grid-12 {
+	grid-template-columns: repeat(4, 1fr);
+}
+
+.b_gallery.gallery-grid-12 .b_gallery_item {
+	aspect-ratio: 1;
+	max-height: 150px;
+}
+
+/* "+X" overlay for more than 12 images (on last visible image) */
 .gallery-more-overlay {
 	position: absolute;
 	top: 0;
@@ -336,11 +368,14 @@
 
 /* ===== Post Content Container Fix ===== */
 .b_post .b_content {
-	overflow: hidden;
+	overflow: visible;
 	width: 100%;
 	box-sizing: border-box;
 	display: flex;
 	justify-content: center;
+	align-items: center;
+	margin: 0;
+	padding: 0;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -357,10 +392,10 @@
 		gap: 8px;
 	}
 	
-	/* On mobile: enlarge gallery to 80% */
+	/* On mobile: enlarge gallery to 100% */
 	.b_gallery {
-		width: 80%;
-		max-width: 80%;
+		width: 100%;
+		max-width: 100%;
 	}
 	
 	/* On mobile: reduce grid to 2 columns */
@@ -371,8 +406,16 @@
 	.b_gallery.gallery-grid-7,
 	.b_gallery.gallery-grid-8,
 	.b_gallery.gallery-grid-9,
-	.b_gallery.gallery-grid-10 {
+	.b_gallery.gallery-grid-10,
+	.b_gallery.gallery-grid-11,
+	.b_gallery.gallery-grid-12 {
 		grid-template-columns: repeat(2, 1fr);
+	}
+	
+	/* ✅ FIX: Force all images to be square on mobile */
+	.b_gallery .b_gallery_item {
+		aspect-ratio: 1 !important;
+		max-height: none !important;
 	}
 	
 	/* Reset special positioning on mobile */
@@ -381,7 +424,10 @@
 	.b_gallery.gallery-grid-6 .b_gallery_item:nth-child(6),
 	.b_gallery.gallery-grid-9 .b_gallery_item:nth-child(9),
 	.b_gallery.gallery-grid-10 .b_gallery_item:nth-child(9),
-	.b_gallery.gallery-grid-10 .b_gallery_item:nth-child(10) {
+	.b_gallery.gallery-grid-10 .b_gallery_item:nth-child(10),
+	.b_gallery.gallery-grid-11 .b_gallery_item:nth-child(9),
+	.b_gallery.gallery-grid-11 .b_gallery_item:nth-child(10),
+	.b_gallery.gallery-grid-11 .b_gallery_item:nth-child(11) {
 		grid-column: auto;
 	}
 	

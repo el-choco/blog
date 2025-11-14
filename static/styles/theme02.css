@@ -85,6 +85,7 @@ background-color: #1877f2;
   border-radius: 25px;
   height: 66px;
   border: 1px solid #000;
+  display:none;
 }
 
 .bluebar h1 {
@@ -198,7 +199,7 @@ max-width: 100%;
     height: 61px;
     line-height: 54px;
     position: relative;
-    margin-top: -55px;
+    margin-top: 20px; /* FIX: War -55px, jetzt positiv für besseren Abstand */
     display: block;
     text-align: center;
     /* background: -moz-linear-gradient(top, transparent 0%, var(--primary-background) 75%, var(--primary-background) 100%); */
@@ -767,7 +768,7 @@ max-width: 100%;
 
 .button.gray {
   border: 0;
-  background-color: var(--secondary-background);
+  background-color: #1877f2;
 }
 .button.gray:hover,
 .button.gray:focus,

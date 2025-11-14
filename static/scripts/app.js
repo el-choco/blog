@@ -7,7 +7,7 @@ $("#dd_mask").click(function(){
 // Multi-Upload State
 var uploadQueue = [];
 var uploadedImages = [];
-var maxImages = 10;
+var maxImages = 12; // ✅ CHANGED from 10 to 12
 var isUploading = false;
 
 // Global helper functions for multi-upload
@@ -67,7 +67,7 @@ function removeImageFromQueue(index) {
 
 function updateImageCounter() {
 	var count = uploadQueue.length;
-	var countText = count > 0 ? count + ' image' + (count > 1 ? 's' : '') + ' selected (max. ' + maxImages + ')' : '';
+	var countText = count > 0 ? count + ' image' + (count > 1 ? 's' : '') + ' selected (max. ' + maxImages + ')' : ''; // ✅ CHANGED: uses maxImages variable
 	$('.image-count').text(countText);
 	
 	if (count > 0) {
@@ -142,6 +142,155 @@ function upload_multiple_images(files, modal, callback) {
 	uploadNext();
 }
 
+// ============================================
+// TRASH MANAGEMENT
+// ============================================
+var trash = {
+	viewing: false,
+	limit: 20,
+	offset: 0,
+	last: false,
+	loading: false,
+	
+	toggle: function() {
+		if (trash.viewing) {
+			trash.hide();
+		} else {
+			trash.show();
+		}
+	},
+	
+	show: function() {
+		$('#b_feed').hide();
+		$('#b_trash').show();
+		$('#trash_toggle').hide();
+		trash.viewing = true;
+		trash.offset = 0;
+		trash.last = false;
+		$('#trash_posts').empty();
+		trash.load();
+	},
+	
+	hide: function() {
+		$('#b_feed').show();
+		$('#b_trash').hide();
+		$('#trash_toggle').show();
+		trash.viewing = false;
+	},
+	
+	load: function() {
+		if (trash.loading || trash.last) return;
+		
+		trash.loading = true;
+		
+		$.get({
+			dataType: "json",
+			url: "ajax.php",
+			data: {
+				action: "list_trash",
+				limit: trash.limit,
+				offset: trash.offset
+			},
+			success: function(trash_data) {
+				if (trash_data.error) {
+					$("body").error_msg(trash_data.msg);
+					trash.loading = false;
+					return;
+				}
+				
+				if (!trash_data || trash_data.length === 0) {
+					trash.last = true;
+					trash.loading = false;
+					return;
+				}
+				
+				trash.offset += trash_data.length;
+				
+				if (trash_data.length < trash.limit) {
+					trash.last = true;
+				}
+				
+				$(trash_data).each(function(i, data) {
+					var post = $('#prepared .post_row').clone();
+					post.post_fill(data);
+					post.addClass('in-trash');
+					post.attr('data-in-trash', '1');
+					post.apply_post();
+					$("#trash_posts").append(post);
+				});
+				
+				trash.loading = false;
+			},
+			error: function() {
+				$("body").error_msg("Failed to load trash.");
+				trash.loading = false;
+			}
+		});
+	},
+	
+	update_count: function() {
+		if (!trashEnabled) return;
+		
+		$.get({
+			dataType: "json",
+			url: "ajax.php",
+			data: {
+				action: "list_trash",
+				limit: 1,
+				offset: 0
+			},
+			success: function(data) {
+				if (data && !data.error && data.length > 0) {
+					// Get actual count
+					$.get({
+						dataType: "json",
+						url: "ajax.php",
+						data: {
+							action: "list_trash",
+							limit: 1000,
+							offset: 0
+						},
+						success: function(allData) {
+							if (allData && !allData.error) {
+								var count = allData.length;
+								if (count > 0) {
+									$('.trash-count').text('(' + count + ')').show();
+								} else {
+									$('.trash-count').hide();
+								}
+							}
+						}
+					});
+				} else {
+					$('.trash-count').hide();
+				}
+			}
+		});
+	}
+};
+
+// Initialize trash toggle buttons
+$(document).ready(function() {
+	if (typeof trashEnabled !== 'undefined' && trashEnabled) {
+		$('#show_trash_btn').click(function() {
+			trash.show();
+		});
+		
+		$('#hide_trash_btn').click(function() {
+			trash.hide();
+		});
+		
+		// Scroll to load more trash items
+		$(window).on('scroll', function() {
+			if (trash.viewing && !trash.loading && !trash.last) {
+				if ($(window).scrollTop() + $(window).height() >= $("#eof_trash").position().top - 100) {
+					trash.load();
+				}
+			}
+		});
+	}
+});
+
 // Posts loading functions
 var posts = {
 	initialized: false,
@@ -186,6 +335,11 @@ var posts = {
 		this.offset = 0;
 		$("#posts").empty();
 		this.load();
+		
+		// Update trash count when reloading posts
+		if (typeof trash !== 'undefined') {
+			trash.update_count();
+		}
 	},
 
 	add_new: function(post) {
@@ -347,11 +501,20 @@ var login = {
 					btn.remove();
 					posts.reload();
 					login.login_btn();
+					
+					// Hide trash toggle
+					$('#trash_headline_btn').hide();
 				}
 			});
 		});
 
 		$("#headline").append(btn);
+		
+		// Show trash button after logout button
+		if (typeof trashEnabled !== 'undefined' && trashEnabled) {
+			$('#trash_headline_btn').show();
+			trash.update_count();
+		}
 	},
 
 	login_btn: function(){
@@ -391,6 +554,10 @@ var login = {
 
 						if(login.is){
 							new_post.create();
+							// Show trash toggle
+							$('#trash_toggle').show();
+							// Update trash count
+							trash.update_count();
 						}
 						btn.remove();
 						posts.reload();
@@ -430,6 +597,12 @@ var login = {
 
 				if(login.is){
 					new_post.create();
+					// Show trash button
+					if (typeof trashEnabled !== 'undefined' && trashEnabled) {
+						$('#trash_headline_btn').show();
+					}
+					// Update trash count on init
+					trash.update_count();
 				}
 
 				posts.init();
@@ -560,6 +733,13 @@ $.fn.error_msg = function(msg){
 			err_msg.active = false;
 		});
 	}, 5000);
+};
+
+// Success message function
+$.fn.success_msg = function(msg){
+	var $msg = $('<div class="success_message" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#4CAF50; color:white; padding:15px 30px; border-radius:5px; z-index:10000; box-shadow:0 2px 10px rgba(0,0,0,0.2);">'+msg+'</div>');
+	$("body").append($msg);
+	setTimeout(function(){ $msg.fadeOut(function(){ $(this).remove(); }); }, 3000);
 };
 
 $(document).ajaxError(function(){
@@ -880,7 +1060,7 @@ $.fn.apply_edit = function(data){
 	});
 };
 
-// Fill post data - WITH TOGGLE FIX
+// Fill post data - WITH FIXED TOGGLE (uses translated text from PHP)
 $.fn.post_fill = function(data){
 	var post = $(this);
 
@@ -934,7 +1114,7 @@ $.fn.post_fill = function(data){
 
 	post.find(".b_date").attr("href", "#id="+data.id);
 
-	// ===== TOGGLE FIX - "SHOW MORE" / "SHOW LESS" =====
+	// ===== FIXED TOGGLE - Uses translated text from PHP data attributes =====
 	var height = 200;
 	var textContainer = post.find(".b_text");
 	
@@ -947,8 +1127,14 @@ $.fn.post_fill = function(data){
 		textContainer.addClass("text-collapsed");
 		
 		var show_more = $('#prepared .show_more').clone();
-		show_more.text("Show More");
+		
+		// ✅ Get translated texts from PHP
+		var textMore = show_more.text(); // Already translated: "Mehr Anzeigen"
+		var textLess = $('#prepared').attr('data-show-less-text') || 'Weniger Anzeigen';
+		
 		show_more.attr("data-expanded", "false");
+		show_more.attr("data-text-more", textMore);
+		show_more.attr("data-text-less", textLess);
 		show_more.insertAfter(textContainer);
 		
 		show_more.click(function(){
@@ -958,13 +1144,13 @@ $.fn.post_fill = function(data){
 				// Expand
 				textContainer.css("max-height", 'none');
 				textContainer.removeClass("text-collapsed");
-				$(this).text("Show Less");
+				$(this).text($(this).attr("data-text-less"));
 				$(this).attr("data-expanded", "true");
 			} else {
 				// Collapse
 				textContainer.css("max-height", height+"px");
 				textContainer.addClass("text-collapsed");
-				$(this).text("Show More");
+				$(this).text($(this).attr("data-text-more"));
 				$(this).attr("data-expanded", "false");
 				
 				// Smooth scroll back to post
@@ -1029,6 +1215,7 @@ $.fn.apply_post = function(){
 	return this.each(function(){
 		var post = $(this);
 		var post_id = post.data("id");
+		var isInTrash = post.hasClass('in-trash') || post.attr('data-in-trash') === '1';
 
 		if(!login.is){
 			$(post).find(".b_tools").css("display", "none").click(function(){});
@@ -1045,6 +1232,22 @@ $.fn.apply_post = function(){
 
 			$("#dd_mask").show();
 			o_mask.show();
+			
+			// Show/hide options based on trash status
+			if (isInTrash) {
+				// In trash: only show restore and permanent delete
+				o_mask.find('li.normal-only').hide();
+				o_mask.find('li.trash-only').show();
+				
+				// Only show permanent delete if HARD_DELETE_FILES is enabled
+				if (typeof hardDeleteFilesEnabled !== 'undefined' && !hardDeleteFilesEnabled) {
+					o_mask.find('.permanent_delete_post').parent().hide();
+				}
+			} else {
+				// Normal post: hide trash-only options
+				o_mask.find('li.trash-only').hide();
+				o_mask.find('li.normal-only').show();
+			}
 
 			$(o_mask).find(".edit_post").click(function(){
 				$("#dd_mask").click();
@@ -1224,12 +1427,20 @@ $.fn.apply_post = function(){
 				});
 			});
 
+			// ===== DELETE POST (Soft or Hard Delete) =====
 			$(o_mask).find(".delete_post").click(function(){
 				$("#dd_mask").click();
 
 				var modal = $('#prepared .delete_modal').clone();
 				$("body").css("overflow", "hidden");
-
+				
+				// Update modal text based on SOFT_DELETE setting
+				if (typeof softDeleteEnabled !== 'undefined' && softDeleteEnabled) {
+					modal.find(".modal-body").text(modal.find(".modal-body").attr("data-trash-text") || "This post will be moved to trash. You can restore it later.");
+				} else {
+					modal.find(".modal-body").text(modal.find(".modal-body").attr("data-delete-text") || "This post will be permanently deleted and cannot be recovered.");
+				}
+				
 				modal.find(".close").click(function(){
 					modal.close();
 				});
@@ -1250,6 +1461,100 @@ $.fn.apply_post = function(){
 
 							post.remove();
 							modal.close();
+							
+							// Update trash count
+							if (typeof trash !== 'undefined') {
+								trash.update_count();
+							}
+							
+							// Show success message
+							var msg = data.soft_deleted ? "Post moved to trash." : "Post permanently deleted.";
+							if (typeof $("body").success_msg === "function") {
+								$("body").success_msg(msg);
+							}
+						}
+					});
+				});
+
+				$("body").append(modal);
+			});
+			
+			// ===== RESTORE POST FROM TRASH =====
+			$(o_mask).find(".restore_post").click(function(){
+				$("#dd_mask").click();
+				
+				$.post({
+					dataType: "json",
+					url: "ajax.php",
+					data: {
+						action: "restore",
+						id: post_id
+					},
+					success: function(data){
+						if(data.error){
+							$("body").error_msg(data.msg);
+							return;
+						}
+						
+						post.remove();
+						
+						// Update trash count
+						if (typeof trash !== 'undefined') {
+							trash.update_count();
+						}
+						
+						if (typeof $("body").success_msg === "function") {
+							$("body").success_msg("Post restored successfully! ♻️");
+						}
+					}
+				});
+			});
+			
+			// ===== PERMANENT DELETE FROM TRASH (FIXED - uses PHP translations) =====
+			$(o_mask).find(".permanent_delete_post").click(function(){
+				$("#dd_mask").click();
+
+				var modal = $('#prepared .delete_modal').clone();
+				
+				// ✅ Get translated texts from PHP data attributes
+				var titleText = $('#prepared').attr('data-delete-permanent-title') || 'Endgültig Löschen';
+				var bodyText = $('#prepared').attr('data-delete-permanent-body') || 'Dieser Beitrag wird endgültig gelöscht und kann nicht wiederhergestellt werden. Zugehörige Bilder werden ebenfalls gelöscht.';
+				var buttonText = $('#prepared').attr('data-delete-permanent-btn') || 'Endgültig Löschen';
+				
+				modal.find(".modal-title").text(titleText);
+				modal.find(".modal-body").text(bodyText);
+				modal.find(".delete").text(buttonText);
+				$("body").css("overflow", "hidden");
+
+				modal.find(".close").click(function(){
+					modal.close();
+				});
+
+				modal.find(".delete").click(function(){
+					$.post({
+						dataType: "json",
+						url: "ajax.php",
+						data: {
+							action: "permanent_delete",
+							id: post_id
+						},
+						success: function(data){
+							if(data.error){
+								modal.find(".modal-body").error_msg(data.msg);
+								return;
+							}
+
+							post.remove();
+							modal.close();
+							
+							// Update trash count
+							if (typeof trash !== 'undefined') {
+								trash.update_count();
+							}
+							
+							if (typeof $("body").success_msg === "function") {
+								$("body").success_msg("Post permanently deleted. 🗑️");
+							}
 						}
 					});
 				});
@@ -1257,6 +1562,7 @@ $.fn.apply_post = function(){
 				$("body").append(modal);
 			});
 
+			// ===== STICKY POST TOGGLE =====
 			if(post.hasClass("sticky") || post.attr("data-sticky") === "1") {
 				$(o_mask).find(".sticky_post").hide();
 				$(o_mask).find(".unsticky_post").show();
@@ -1290,7 +1596,7 @@ $.fn.apply_post = function(){
 						}
 						
 						var msg = data.is_sticky ? "Post marked as sticky! 📌" : "Sticky removed.";
-						if(typeof $("body").success_msg === "function"){
+						if (typeof $("body").success_msg === "function") {
 							$("body").success_msg(msg);
 						} else {
 							alert(msg);
@@ -1309,6 +1615,7 @@ $.fn.apply_post = function(){
 	});
 };
 
+// ✅ FIXED: filedrop now supports multi-upload via drag & drop
 $.fn.filedrop = function(callback){
 	return this.each(function() {
 		$(this).bind('dragover dragleave drop', function(event) {
@@ -1330,14 +1637,42 @@ $.fn.filedrop = function(callback){
 		});
 
 		$(this).bind('drop', function(event) {
-			var files = event.originalEvent.target.files || event.originalEvent.dataTransfer.files
+			var files = event.originalEvent.target.files || event.originalEvent.dataTransfer.files;
 
-			if(typeof callback === "function" && files.length > 0)
-				callback(files[0]);
+			// ✅ CHANGED: Support multiple files via drag & drop
+			if(typeof callback === "function" && files && files.length > 0) {
+				// If multiple files, handle them all
+				if(files.length > 1) {
+					// Add all files to uploadQueue (max 12)
+					uploadQueue = Array.from(files).slice(0, maxImages);
+					
+					// Show preview
+					var modal = $(this).closest('.edit_form').parent();
+					var previewContainer = modal.find('.image-preview-container');
+					if (previewContainer.length === 0) {
+						previewContainer = $('<div class="image-preview-container"></div>');
+						$(this).after(previewContainer);
+					}
+					
+					previewContainer.show();
+					show_image_previews(uploadQueue, previewContainer);
+					updateImageCounter();
+					
+					// Show multi-upload info
+					if (modal.find('.multi-upload-info').length === 0) {
+						previewContainer.after('<div class="multi-upload-info"><span class="image-count"></span> - Click \'Save\' to upload</div>');
+					}
+					modal.find('.multi-upload-info').show();
+					updateImageCounter();
+				} else {
+					// Single file - use old callback for backward compatibility
+					callback(files[0]);
+				}
+			}
 
-			return false
-		})
-	})
+			return false;
+		});
+	});
 };
 
 login.init();
@@ -1358,11 +1693,3 @@ $(document).on('dragover', function(e) {
 $(window)
 .on("scroll resize touchmove", posts.tryload)
 .on("hashchange", posts.hash_update);
-
-if(!$.fn.success_msg){
-	$.fn.success_msg = function(msg){
-		var $msg = $('<div class="success_message" style="position:fixed; top:20px; left:50%; transform:translateX(-50%); background:#4CAF50; color:white; padding:15px 30px; border-radius:5px; z-index:10000; box-shadow:0 2px 10px rgba(0,0,0,0.2);">'+msg+'</div>');
-		$("body").append($msg);
-		setTimeout(function(){ $msg.fadeOut(function(){ $(this).remove(); }); }, 3000);
-	};
-}
