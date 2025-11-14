@@ -124,9 +124,13 @@ if (Config::get_safe("version", false)) {
 </head>
 <body>
 	<div id="dd_mask" class="mask"></div>
-	<div id="prepared" style="display:none;">
+	<div id="prepared" style="display:none;"
+	     data-show-less-text="<?php echo __("Weniger Anzeigen"); ?>"
+	     data-delete-permanent-title="<?php echo __("Endgültig Löschen"); ?>"
+	     data-delete-permanent-body="<?php echo __("Dieser Beitrag wird endgültig gelöscht und kann nicht wiederhergestellt werden. Zugehörige Bilder werden ebenfalls gelöscht."); ?>"
+	     data-delete-permanent-btn="<?php echo __("Endgültig Löschen"); ?>">
 		<!-- Show More Button -->
-		<a class="show_more"><?php echo __("Show More"); ?></a>
+		<a class="show_more"><?php echo __("Mehr Anzeigen"); ?></a>
 
 		<!-- Login Button -->
 		<button type="button" class="button blue login_btn"><?php echo __("Login"); ?></button>
@@ -194,18 +198,22 @@ if (Config::get_safe("version", false)) {
 
 		<!-- Post Tools -->
 		<ul class="b_dropdown post_tools">
-			<li><a class="edit_post"><?php echo __("Edit Post"); ?></a></li>
-			<li><a class="edit_date"><?php echo __("Change Date"); ?></a></li>
-			<li>
-				<a class="sticky_post"><?php echo __("Mark as Sticky"); ?></a>
-				<a class="unsticky_post"><?php echo __("Remove Sticky"); ?></a>
+			<li class="normal-only"><a class="edit_post">✏️ <?php echo __("Edit Post"); ?></a></li>
+			<li class="normal-only"><a class="edit_date">📅 <?php echo __("Change Date"); ?></a></li>
+			<li class="normal-only">
+				<a class="sticky_post">📌 <?php echo __("Mark as Sticky"); ?></a>
+				<a class="unsticky_post">📍 <?php echo __("Remove Sticky"); ?></a>
 			</li>
-			<li>
-				<a class="hide"><?php echo __("Hide from Timeline"); ?></a>
-				<a class="show"><?php echo __("Show on Timeline"); ?></a>
+			<li class="normal-only">
+				<a class="hide">👁️‍🗨️ <?php echo __("Hide from Timeline"); ?></a>
+				<a class="show">👁️ <?php echo __("Show on Timeline"); ?></a>
 			</li>
-			<li><a class="delete_post"><?php echo __("Delete Post"); ?></a></li>
+			<li class="normal-only"><a class="delete_post">🗑️ <?php echo __("Delete Post"); ?></a></li>
+			<!-- Trash-only options -->
+			<li class="trash-only" style="display:none;"><a class="restore_post">♻️ <?php echo __("Restore Post"); ?></a></li>
+			<li class="trash-only" style="display:none;"><a class="permanent_delete_post">🗑️ <?php echo __("Delete Permanently"); ?></a></li>
 		</ul>
+
 		<!-- Edit Modal -->
 		<div class="modal edit_modal">
 			<div class="modal-dialog">
@@ -434,7 +442,11 @@ if (Config::get_safe("version", false)) {
 						<a class="close"></a>
 						<h4 class="modal-title"><?php echo __("Delete Post"); ?></h4>
 					</div>
-					<div class="modal-body"><?php echo __("This post will be deleted and you'll no longer be able to find it. You can also edit this post if you just want to change something."); ?></div>
+					<div class="modal-body" 
+						data-trash-text="<?php echo __("This post will be moved to trash. You can restore it later."); ?>"
+						data-delete-text="<?php echo __("This post will be permanently deleted and cannot be recovered. Associated images will also be deleted."); ?>">
+						<?php echo __("This post will be deleted"); ?>
+					</div>
 					<div class="modal-footer">
 						<div class="buttons">
 							<a class="button gray close"><?php echo __("Cancel"); ?></a>
@@ -488,18 +500,51 @@ if (Config::get_safe("version", false)) {
 			<div class="name"><?php echo escape(Config::get("name")); ?></div>
 		</div>
 		<div id="headline"></div>
+
+		<!-- Trash button below logout (only visible when logged in) -->
+		<div id="trash_headline_btn" style="display:none; max-width: 1000px; margin: 0 auto 20px auto; text-align: right; padding: 0 10px;">
+			<button type="button" class="button gray" id="show_trash_btn" style="padding: 8px 16px; font-size: 14px; display: inline-block;">
+				🗑️ <?php echo __("Show Trash"); ?> <span class="trash-count" style="color: #666; font-weight: bold;"></span>
+			</button>
+		</div>
 	</div>
 
-	<div id="b_feed">
-		<div class="more_posts">
-			<a href="#" class="button"><?php echo __("Show all posts"); ?></a>
+	<!-- Trash/Recycle Bin Toggle (only visible when logged in) -->
+	<script>
+	var trashEnabled = <?php echo User::is_logged_in() ? 'true' : 'false'; ?>;
+	var softDeleteEnabled = <?php echo Config::get_safe('SOFT_DELETE', true) ? 'true' : 'false'; ?>;
+	var hardDeleteFilesEnabled = <?php echo Config::get_safe('HARD_DELETE_FILES', true) ? 'true' : 'false'; ?>;
+	</script>
+
+    <?php if(User::is_logged_in()): ?>
+		<?php endif; ?>
+			<div id="b_feed">
+				<div class="more_posts">
+					<a href="#" class="button"><?php echo __("Show all posts"); ?></a>
+				</div>
+				<div id="posts"></div>
+			</div>
+
+	<!-- Trash View (only visible when logged in) -->
+	<?php if(User::is_logged_in()): ?>
+	<div id="b_trash" style="display: none; max-width: 1000px; margin: 0 auto;">
+		<div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
+			<h2 style="margin: 0 0 10px 0;">🗑️ <?php echo __("Trash"); ?></h2>
+			<p style="color: #666; margin: 0 0 15px 0;"><?php echo __("Posts in trash can be restored or permanently deleted"); ?></p>
+			<button type="button" class="button blue" id="hide_trash_btn" style="padding: 10px 20px;">
+				⬅️ <?php echo __("Back to Timeline"); ?>
+			</button>
 		</div>
-		<div id="posts"></div>
+		<div id="trash_posts"></div>
+		<div id="eof_trash" style="text-align: center; padding: 40px; color: #999;">
+			<p><?php echo __("End of trash"); ?></p>
+		</div>
 	</div>
+	<?php endif; ?>
 
 	<div id="eof_feed">
 		<img src="static/images/zpEYXu5Wdu6.png">
-		<p><?php echo escape(Config::get("version")); ?> &copy; 2016-2022<br>
+		<p><?php echo escape(Config::get("version")); ?> &copy; 2016-2025<br>
 		<?php echo Config::get_safe("footer", false) ? escape(Config::get_safe("footer")) : '<a href="https://github.com/m1k1o/blog" class="link" title="m1k1o/blog github repository" target="_blank">m1k1o/blog</a>'; ?>
 		</p>
 	</div>
@@ -662,7 +707,7 @@ if (Config::get_safe("version", false)) {
 				after = '';
 				break;
 			case 'link':
-				const url = prompt('<?php echo __("Enter URL"); ?>', 'https://');
+				const url = prompt('Enter URL:', 'https://');
 				if (url) {
 					if (selectedText) {
 						before = '[';
@@ -674,10 +719,10 @@ if (Config::get_safe("version", false)) {
 				}
 				break;
 			case 'image':
-				const imgUrl = prompt('<?php echo __("Enter Image URL"); ?>', 'https://');
+				const imgUrl = prompt('Enter Image URL:', 'https://');
 				if (imgUrl) {
-					const alt = prompt('<?php echo __("Alt Text (optional)"); ?>', '<?php echo __("Image"); ?>');
-					before = '![' + (alt || '<?php echo __("Image"); ?>') + '](' + imgUrl + ')';
+					const alt = prompt('Alt text, optional:', 'Image');
+					before = '![' + (alt || 'Image') + '](' + imgUrl + ')';
 					after = '';
 				}
 				break;
@@ -686,7 +731,7 @@ if (Config::get_safe("version", false)) {
 				after = '`';
 				break;
 			case 'codeblock':
-				const lang = prompt('<?php echo __("Language (optional)"); ?>', '');
+				const lang = prompt('Language, optional, e.g. javascript:', '');
 				before = '\n```' + (lang || '') + '\n';
 				after = '\n```\n';
 				break;
@@ -755,7 +800,7 @@ if (Config::get_safe("version", false)) {
 				after = '</div>';
 				break;
 			case 'color':
-				const color = prompt('<?php echo __("Enter Color"); ?>', 'red');
+				const color = prompt('Enter color, e.g. red or #ff0000:', 'red');
 				if (color) {
 					before = '<span style="color:' + color + '">';
 					after = '</span>';
@@ -786,9 +831,9 @@ if (Config::get_safe("version", false)) {
 				after = '</sub>';
 				break;
 			case 'spoiler':
-				const title = prompt('<?php echo __("Spoiler Title"); ?>', '<?php echo __("Click to Show"); ?>');
+				const title = prompt('Spoiler title:', 'Click to show');
 				if (title !== null) {
-					before = '<details><summary>' + (title || '<?php echo __("Click to Show"); ?>') + '</summary>\n';
+					before = '<details><summary>' + (title || 'Click to show') + '</summary>\n';
 					after = '\n</details>';
 				}
 				break;

@@ -1,14 +1,3 @@
-# Modified by el-choco:
----
-* **add Markdown**
-* **add Markdown Picker Bar**
-* **add Emojis**
-* **add Emoji Picker Bar**
-* **remove bbcode**
-* **add HTML for example**  `<center>Text<center> `
-* **A toggle button solution was created in the post based on the prior one: Show more, then show fewer!**
----
-
 # blog
 This is a simple self-hosted, lightweight, singe-user PHP blog, where you can create your own Facebook-like feed. Give read access to other people, and you can share rich text with photos including highlighted code or links.
 
@@ -21,26 +10,26 @@ In this context lightweight means:
 <details>
 	<summary>Light theme</summary>
 
-![screenshot](https://raw.githubusercontent.com/el-choco/blog/master/static/screenshot-theme02-light.png)
+![screenshot](https://raw.githubusercontent.com/m1k1o/blog/master/static/screenshot-theme02-light.png)
 </details>
 
 <details>
 	<summary>Dark theme</summary>
 
-![screenshot](https://raw.githubusercontent.com/el-choco/blog/master/static/screenshot-theme02-dark.png)
+![screenshot](https://raw.githubusercontent.com/m1k1o/blog/master/static/screenshot-theme02-dark.png)
 </details>
 
 <details>
 	<summary>Legacy theme (compatible with older browsers)</summary>
 
-![screenshot](https://raw.githubusercontent.com/el-choco/blog/master/static/screenshot-theme01.png)
+![screenshot](https://raw.githubusercontent.com/m1k1o/blog/master/static/screenshot-theme01.png)
 </details>
 
 ## Zero configuration setup
 Container will run without any initial configuration needed using SQLite as database provider. For better performance consider using MySQL.
 
 ```sh
-docker run -d -p 80:80 -v $PWD/data:/var/www/html/data el-choco/blog/blog:latest
+docker run -d -p 80:80 -v $PWD/data:/var/www/html/data m1k1o/blog:latest
 ```
 
 You can set environment variables, prefixed with `BLOG_` and uppercase. They can be found in `config.ini`.
@@ -54,7 +43,7 @@ docker run -d \
   -e "BLOG_PASS=password" \
   -e "BLOG_LANG=en" \
   -v $PWD/data:/var/www/html/data \
-  el-choco/blog:latest
+  m1k1o/blog:latest
 ```
 
 Or for docker-compose format, see [docker-compose.yml](docker-compose.yml).
@@ -67,7 +56,7 @@ You need to install [docker-compose](https://docs.docker.com/compose/install/).
 version: "3"
 services:
   webserver:
-    image: el-choco/blog:latest
+    image: m1k1o/blog:latest
     container_name: blog_apache
     environment:
       TZ: Europe/Vienna
@@ -103,7 +92,7 @@ volumes:
 version: "3"
 services:
   webserver:
-    image: el-choco/blog:latest
+    image: m1k1o/blog:latest
     container_name: blog_apache
     environment:
       TZ: Europe/Vienna
@@ -153,7 +142,7 @@ Download default config file and copy to your new `./data/` directory.
 
 ```sh
 mkdir data && cd data
-wget https://raw.githubusercontent.com/el-choco/blog/blog/master/config.ini
+wget https://raw.githubusercontent.com/m1k1o/blog/master/config.ini
 ```
 
 Now you can modify your config. Or you can set environment variables, in uppercase, starting with `BLOG_`, e.g. `BLOG_NAME: Max's blog`.
@@ -201,14 +190,8 @@ To check if your server is set up correctly, turn on a debug mode (in config add
 
 # Features
 
-
-* Added Markdown in texts. **( New )**
-* Added Markdown-Picker-Bar **( New )**
-* Added Smilies  **( New )**
-* Added Smilies-Picker-Bar  **( New )**
-* Added toggle button solution was created in the post based on the prior one: Show more, then show fewer! **( New )**
----
 * Dark mode, retina ready, legacy theme available.
+* Use BBcode in texts.
 * Make posts available for **everyone**, **only you** or just for **friends**.
 * Extra fields in post: **Feeling**, **With** and **At**.
 * Hide posts from timeline so they are visible only when you need them to be.
@@ -216,8 +199,8 @@ To check if your server is set up correctly, turn on a debug mode (in config add
 * Upload images using button *(for mobile)*.
 * Upload images using drag & drop *(drop it into textarea)*.
 * Upload images using CTRL + V *(paste it into textarea)*. 
-$~~* Highlight code in post using `[code]..your code..[/code]`.~~$
-$~~* Highlight your goal using `[goal]Text of your goal.[/goal]`.
+* Highlight code in post using `[code]..your code..[/code]`.
+* Highlight your goal using `[goal]Text of your goal.[/goal]`.
 * Use tags in posts (allowed characters `A-Za-z0-9-_` terminated by space or EOL): `#song`.
 * Sort posts in reverse order (oldest first): `http://blog/#sort=reverse`.
 * Filter posts by hashtags: `http://blog/#tag=songs`.
@@ -240,7 +223,7 @@ In `docker-compose.yml` file, specify your credentials and friends like this:
 version: "3"
 services:
   blog:
-    image:el-choco/blog:latest
+    image: m1k1o/blog:latest
     restart: unless-stopped
     environment:
         TZ: Europe/Vienna
