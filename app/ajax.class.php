@@ -49,7 +49,7 @@ class Ajax
 		}
 
 		header('Content-Type: application/json; charset=utf-8');
-		// WICHTIG: JSON_UNESCAPED_UNICODE damit Emojis richtig übertragen werden
+		// IMPORTANT: JSON_UNESCAPED_UNICODE ensures emojis are transmitted correctly
 		echo json_encode($this->_response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 	}
 }
