@@ -14,97 +14,73 @@ class Post
 		$html_tags = [];
 		$placeholder_count = 0;
 		
-		$c = preg_replace_callback('/<([^>]+)>/', function($matches) use (&$html_tags, &$placeholder_count) {
+		$c = preg_replace_callback('/<([^>]+)>/i', function($matches) use (&$html_tags, &$placeholder_count) {
 			$placeholder = '§§§HTMLTAG' . $placeholder_count . '§§§';
 			$html_tags[$placeholder] = $matches[0];
 			$placeholder_count++;
 			return $placeholder;
 		}, $c);
 		
+		// Normalize line endings
+		$c = str_replace(["\r\n", "\r"], "\n", $c);
+
 		// Step 2: Process Markdown syntax
 		
 		// Headers (must be at start of line)
-		$c = preg_replace('/^### (.+)$/m', '§§§H3START§§§$1§§§H3END§§§', $c);
-		$c = preg_replace('/^## (.+)$/m', '§§§H2START§§§$1§§§H2END§§§', $c);
-		$c = preg_replace('/^# (.+)$/m', '§§§H1START§§§$1§§§H1END§§§', $c);
+		$c = preg_replace('/^###\s+(.+)$/m', '<h3>$1</h3>', $c);
+		$c = preg_replace('/^##\s+(.+)$/m', '<h2>$1</h2>', $c);
+		$c = preg_replace('/^#\s+(.+)$/m', '<h1>$1</h1>', $c);
 		
 		// Bold: **text**
-		$c = preg_replace('/\*\*(.+?)\*\*/', '§§§STRONG§§§$1§§§/STRONG§§§', $c);
+		$c = preg_replace('/\*\*(.+?)\*\*/s', '<strong>$1</strong>', $c);
 		
 		// Italic: *text*
-		$c = preg_replace('/\*([^\*]+)\*/', '§§§EM§§§$1§§§/EM§§§', $c);
+		$c = preg_replace('/(?<!\*)\*([^*\n]+)\*(?!\*)/s', '<em>$1</em>', $c);
 		
 		// Strikethrough: ~~text~~
-		$c = preg_replace('/~~(.+?)~~/', '§§§DEL§§§$1§§§/DEL§§§', $c);
+		$c = preg_replace('/~~(.+?)~~/s', '<del>$1</del>', $c);
 		
 		// Links: [text](url)
-		$c = preg_replace('/\[([^\]]+)\]\(([^\)]+)\)/', '§§§ASTART§§§$2§§§AMID§§§$1§§§AEND§§§', $c);
+		$c = preg_replace_callback('/\[([^\]]+)\]\(([^)]+)\)/s', function($m){
+			$text = $m[1];
+			$url = htmlspecialchars($m[2], ENT_QUOTES, 'UTF-8');
+			return '<a href="'.$url.'" target="_blank">'.$text.'</a>';
+		}, $c);
 		
 		// Images: ![alt](url)
-		$c = preg_replace('/!\[([^\]]*)\]\(([^\)]+)\)/', '§§§IMG§§§$2§§§ALT§§§$1§§§/IMG§§§', $c);
+		$c = preg_replace_callback('/!\[([^\]]*)\]\(([^)]+)\)/s', function($m){
+			$alt = htmlspecialchars($m[1], ENT_QUOTES, 'UTF-8');
+			$src = htmlspecialchars($m[2], ENT_QUOTES, 'UTF-8');
+			return '<img src="'.$src.'" alt="'.$alt.'" style="max-width:100%;">';
+		}, $c);
 		
 		// Code: `code`
-		$c = preg_replace('/`([^`]+)`/', '§§§CODE§§§$1§§§/CODE§§§', $c);
+		$c = preg_replace_callback('/`([^`]+)`/u', function($m){
+			return '<code>'.htmlspecialchars($m[1], ENT_QUOTES, 'UTF-8').'</code>';
+		}, $c);
 		
-		// Lists
-		$c = preg_replace('/^[\-\*] (.+)$/m', '§§§LI§§§$1§§§/LI§§§', $c);
-		
-		// Numbered lists
-		$c = preg_replace('/^\d+\. (.+)$/m', '§§§LI§§§$1§§§/LI§§§', $c);
-		
-		// Blockquotes
-		$c = preg_replace('/^> (.+)$/m', '§§§BQ§§§$1§§§/BQ§§§', $c);
-		
-		// Horizontal rule
-		$c = preg_replace('/^---$/m', '§§§HR§§§', $c);
-		
-		// Step 3: Apply text formatting
-		
-		// Replace quotes
-		$c = preg_replace('/\"([^\"]+)\"/i', "„$1\"", $c);
-		
-		// Auto-link URLs
-		$c = preg_replace('/(https?\:\/\/[^\s<§]+)/', '§§§ASTART§§§$1§§§AMID§§§$1§§§AEND§§§', $c);
-		
-		// Hashtags
-		$c = preg_replace('/(\#[A-Za-z0-9-_]+)/', '§§§TAG§§§$1§§§/TAG§§§', $c);
-		
-		// Line breaks
-		$c = nl2br($c);
-		
-		// Step 4: Convert markers to HTML tags
-		$c = str_replace('§§§H1START§§§', '<h1>', $c);
-		$c = str_replace('§§§H1END§§§', '</h1>', $c);
-		$c = str_replace('§§§H2START§§§', '<h2>', $c);
-		$c = str_replace('§§§H2END§§§', '</h2>', $c);
-		$c = str_replace('§§§H3START§§§', '<h3>', $c);
-		$c = str_replace('§§§H3END§§§', '</h3>', $c);
-		$c = str_replace('§§§STRONG§§§', '<strong>', $c);
-		$c = str_replace('§§§/STRONG§§§', '</strong>', $c);
-		$c = str_replace('§§§EM§§§', '<em>', $c);
-		$c = str_replace('§§§/EM§§§', '</em>', $c);
-		$c = str_replace('§§§DEL§§§', '<del>', $c);
-		$c = str_replace('§§§/DEL§§§', '</del>', $c);
-		$c = str_replace('§§§CODE§§§', '<code>', $c);
-		$c = str_replace('§§§/CODE§§§', '</code>', $c);
-		$c = str_replace('§§§LI§§§', '<li>', $c);
-		$c = str_replace('§§§/LI§§§', '</li>', $c);
-		$c = str_replace('§§§BQ§§§', '<blockquote>', $c);
-		$c = str_replace('§§§/BQ§§§', '</blockquote>', $c);
-		$c = str_replace('§§§HR§§§', '<hr>', $c);
-		$c = str_replace('§§§TAG§§§', '<span class="tag">', $c);
-		$c = str_replace('§§§/TAG§§§', '</span>', $c);
-		
-		// Links
-		$c = preg_replace('/§§§ASTART§§§([^§]+)§§§AMID§§§([^§]+)§§§AEND§§§/', '<a href="$1" target="_blank">$2</a>', $c);
-		
-		// Images
-		$c = preg_replace('/§§§IMG§§§([^§]+)§§§ALT§§§([^§]*)§§§\/IMG§§§/', '<img src="$1" alt="$2">', $c);
-		
-		// Wrap consecutive <li> in <ul>
+		// Lists (unordered and ordered)
+		$c = preg_replace('/^[\-\*]\s+(.+)$/m', '<li>$1</li>', $c);
+		$c = preg_replace('/^\d+\.\s+(.+)$/m', '<li>$1</li>', $c);
+		// Wrap consecutive <li> groups into <ul>
 		$c = preg_replace('/(<li>.*?<\/li>\s*)+/s', '<ul>$0</ul>', $c);
 		
-		// Step 5: Restore user's HTML tags
+		// Blockquotes
+		$c = preg_replace('/^>\s+(.+)$/m', '<blockquote>$1</blockquote>', $c);
+		
+		// Horizontal rule
+		$c = preg_replace('/^(-{3,}|\*{3,})$/m', '<hr>', $c);
+		
+		// Auto-link plain URLs
+		$c = preg_replace('/(?<!["\'=\/])\b(https?:\/\/[^\s<]+)\b/i', '<a href="$1" target="_blank">$1</a>', $c);
+		
+		// Hashtags
+		$c = preg_replace('/(\#[A-Za-z0-9\-_]+)(\s|$)/u', '<span class="tag">$1</span>$2', $c);
+		
+		// Convert newlines to <br> for remaining text
+		$c = nl2br($c);
+
+		// Step 3: Restore user's original HTML tags
 		foreach ($html_tags as $placeholder => $tag) {
 			$c = str_replace($placeholder, $tag, $c);
 		}
@@ -350,23 +326,21 @@ class Post
 	}
 
 	/**
-	 * Helper method to delete images associated with a post
+	 * Helper method to delete media associated with a post (images/files/mixed)
 	 * @param array $post Post data containing content_type and content
 	 */
 	private static function delete_post_images($post){
 		try {
 			$content = json_decode($post['content'], true);
-			
-			// Handle single image
+
+			// single image
 			if ($post['content_type'] === 'image' && isset($content['path'])) {
 				if (isset($content['path']) && file_exists($content['path'])) {
-					unlink($content['path']);
+					@unlink($content['path']);
 				}
 				if (isset($content['thumb']) && file_exists($content['thumb'])) {
-					unlink($content['thumb']);
+					@unlink($content['thumb']);
 				}
-				
-				// Mark image as deleted in database
 				if (Config::get_safe('AUTO_CLEANUP_IMAGES', false)) {
 					DB::get_instance()->query("
 						UPDATE `images`
@@ -375,18 +349,16 @@ class Post
 					", $content['path'], $content['thumb']);
 				}
 			}
-			
-			// Handle multiple images
+
+			// multiple images
 			if ($post['content_type'] === 'images' && is_array($content)) {
 				foreach ($content as $image) {
 					if (isset($image['path']) && file_exists($image['path'])) {
-						unlink($image['path']);
+						@unlink($image['path']);
 					}
 					if (isset($image['thumb']) && file_exists($image['thumb'])) {
-						unlink($image['thumb']);
+						@unlink($image['thumb']);
 					}
-					
-					// Mark image as deleted in database
 					if (Config::get_safe('AUTO_CLEANUP_IMAGES', false)) {
 						DB::get_instance()->query("
 							UPDATE `images`
@@ -396,17 +368,109 @@ class Post
 					}
 				}
 			}
+
+			// files
+			if ($post['content_type'] === 'files' && is_array($content)) {
+				foreach ($content as $file) {
+					if (isset($file['path']) && file_exists($file['path'])) {
+						@unlink($file['path']);
+					}
+					// Optionally update DB file table if present
+				}
+			}
+
+			// mixed: { images: [...], files: [...] }
+			if ($post['content_type'] === 'mixed' && is_array($content)) {
+				if (isset($content['images']) && is_array($content['images'])) {
+					foreach ($content['images'] as $image) {
+						if (isset($image['path']) && file_exists($image['path'])) {
+							@unlink($image['path']);
+						}
+						if (isset($image['thumb']) && file_exists($image['thumb'])) {
+							@unlink($image['thumb']);
+						}
+						if (Config::get_safe('AUTO_CLEANUP_IMAGES', false)) {
+							DB::get_instance()->query("
+								UPDATE `images`
+								SET `status` = 5
+								WHERE `path` = ? OR `thumb` = ?
+							", $image['path'], $image['thumb']);
+						}
+					}
+				}
+				if (isset($content['files']) && is_array($content['files'])) {
+					foreach ($content['files'] as $file) {
+						if (isset($file['path']) && file_exists($file['path'])) {
+							@unlink($file['path']);
+						}
+					}
+				}
+			}
 		} catch (Exception $e) {
 			// Log error but continue with post deletion
-			error_log("Failed to delete images for post: " . $e->getMessage());
+			error_log("Failed to delete media for post: " . $e->getMessage());
 		}
 	}
 
 	/**
-	 * Delete a post (soft or hard delete based on configuration)
-	 * @param array $r Request data with post id
-	 * @return array Status information
+	 * Upload generic file attachment
+	 * Returns JSON metadata: valid, path (server), url (relative), name, size, mime
 	 */
+	public static function upload_file(){
+		self::login_protected();
+
+		if(!isset($_FILES['file'])){
+			return ["error" => true, "msg" => __("No file uploaded.")];
+		}
+
+		$file = $_FILES['file'];
+		if($file['error'] !== UPLOAD_ERR_OK){
+			return ["error" => true, "msg" => __("Upload error code: ") . $file['error']];
+		}
+
+		// Max size default: 5 GB -> 5 * 1024 * 1024 * 1024
+		$maxSize = Config::get_safe('MAX_FILE_UPLOAD', 5 * 1024 * 1024 * 1024);
+		if($file['size'] > $maxSize){
+			return ["error" => true, "msg" => __("File too large. Max ") . ($maxSize/1024/1024/1024) . "GB"];
+		}
+
+		// Mime detection
+		$finfo = finfo_open(FILEINFO_MIME_TYPE);
+		$mime = finfo_file($finfo, $file['tmp_name']);
+		finfo_close($finfo);
+
+		// Optional whitelist (if set in config)
+		$allowed = Config::get_safe('ALLOWED_FILE_TYPES', false);
+		if(is_array($allowed) && count($allowed) > 0 && !in_array($mime, $allowed)){
+			return ["error" => true, "msg" => __("File type not allowed: ") . $mime];
+		}
+
+		$uploadDir = PROJECT_PATH . 'uploads/files/';
+		if(!is_dir($uploadDir)){
+			@mkdir($uploadDir, 0755, true);
+		}
+
+		$ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+		$base = bin2hex(random_bytes(8));
+		$destName = $base . ($ext ? '.' . $ext : '');
+		$destPath = $uploadDir . $destName;
+
+		if(!move_uploaded_file($file['tmp_name'], $destPath)){
+			return ["error" => true, "msg" => __("Failed to move uploaded file.")];
+		}
+
+		$relativeUrl = 'uploads/files/' . $destName;
+
+		return [
+			"valid" => true,
+			"path" => $destPath,
+			"url" => $relativeUrl,
+			"name" => $file['name'],
+			"size" => intval($file['size']),
+			"mime" => $mime
+		];
+	}
+
 	public static function delete($r){
 		self::login_protected();
 
@@ -440,12 +504,9 @@ class Post
 		}
 
 		// HARD DELETE: Permanently remove from database
-		// IMPORTANT: When SOFT_DELETE=false and HARD_DELETE_FILES=false,
-		// we still delete images to prevent orphaned files from accumulating.
-		// This overrides HARD_DELETE_FILES=false for immediate deletions.
 		$should_delete_files = $hard_delete_files || !$soft_delete;
 		
-		if ($should_delete_files && in_array($post['content_type'], ['image', 'images'])) {
+		if ($should_delete_files && in_array($post['content_type'], ['image', 'images', 'files', 'mixed'])) {
 			self::delete_post_images($post);
 		}
 
@@ -462,17 +523,11 @@ class Post
 		];
 	}
 
-	/**
-	 * Permanently delete a post from trash
-	 * @param array $r Request data with post id
-	 * @return array Status information
-	 */
 	public static function permanent_delete($r){
 		self::login_protected();
 
 		$hard_delete_files = Config::get_safe('HARD_DELETE_FILES', true);
 		
-		// Get post content before deletion
 		$post = DB::get_instance()->query("
 			SELECT `content_type`, `content`
 			FROM `posts`
@@ -484,12 +539,10 @@ class Post
 			throw new Exception("Post not found in trash.");
 		}
 
-		// Delete associated image files if configured
-		if ($hard_delete_files && in_array($post['content_type'], ['image', 'images'])) {
+		if ($hard_delete_files && in_array($post['content_type'], ['image', 'images', 'files', 'mixed'])) {
 			self::delete_post_images($post);
 		}
 
-		// Permanently delete post from database
 		DB::get_instance()->query("
 			DELETE FROM `posts`
 			WHERE `id` = ?
@@ -499,11 +552,6 @@ class Post
 		return ["permanently_deleted" => true, "files_deleted" => $hard_delete_files];
 	}
 
-	/**
-	 * Restore a post from trash
-	 * @param array $r Request data with post id
-	 * @return array Status information
-	 */
 	public static function restore($r){
 		self::login_protected();
 
@@ -517,11 +565,6 @@ class Post
 		return ["restored" => true];
 	}
 
-	/**
-	 * List all posts in trash
-	 * @param array $r Request data with limit and offset
-	 * @return array List of trashed posts
-	 */
 	public static function list_trash($r){
 		self::login_protected();
 
@@ -544,11 +587,6 @@ class Post
 		", $r["limit"] ?? 50, $r["offset"] ?? 0)->all();
 	}
 
-	/**
-	 * Toggle sticky status of a post
-	 * @param array $r Request data with post id
-	 * @return array New sticky status
-	 */
 	public static function toggle_sticky($r){
 		self::login_protected();
 
