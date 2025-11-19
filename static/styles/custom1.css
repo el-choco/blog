@@ -1,8 +1,10 @@
+/* General layout & existing custom styles (kept from your file) */
 #b_feed {
   max-width: 1000px;
 }
 .headbar {
   max-width: 1000px;
+  background-color: #fff;
 }
 /* ============================================
    COLLAPSE/EXPAND ANIMATION IMPROVEMENTS
@@ -56,7 +58,7 @@
 
 .show_more[data-expanded="true"]::before {
 	transform: rotate(180deg);
-	content: '▲';
+	/*content: '▲';*/
 }
 /* ============================================
    MULTI-IMAGE GALLERY STYLES
@@ -548,4 +550,107 @@
 
 .remove-gallery-image-btn:active {
 	transform: scale(0.95) !important;
+}
+
+/* ===== FILE ATTACH (paperclip) - targeted fixes (keine globalen Overrides) ===== */
+
+/* Ensure the label used for the paperclip matches other option icon size,
+   but do not touch ul.options li a which contains the other icon backgrounds. */
+ul.options li.file_attach {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: middle;
+  position: relative; /* for absolute input inside */
+}
+
+/* The label itself (only for the file_attach li) */
+ul.options li.file_attach > .file-attach-label,
+ul.options li.file_attach > label.file-attach-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  text-align: center;
+  vertical-align: middle;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  position: relative; /* positioning context for the input */
+}
+
+/* visible icon inside the label - centered and non-blocking for clicks */
+ul.options li.file_attach .file-attach-label .file-icon {
+  font-size: 18px;
+  line-height: 1;
+  pointer-events: none; /* allow clicks to pass through to input */
+  display: inline-block;
+  color: inherit;
+  transform: translateY(-1px); /* slight nudge to match baseline */
+}
+
+/* Invisible input overlay: covers the whole label and is clickable */
+ul.options li.file_attach .file-attach-label input[type="file"] {
+  position: absolute;
+  inset: 0;               /* top:0; right:0; bottom:0; left:0; */
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  z-index: 4;
+  background: transparent;
+}
+
+/* Hover / focus feedback for the label, similar to icon anchors */
+ul.options li.file_attach > .file-attach-label:hover,
+ul.options li.file_attach > .file-attach-label:focus-within {
+  background: rgba(0,0,0,0.03);
+  outline: none;
+}
+
+/* Accessibility: visible focus for keyboard users */
+ul.options li.file_attach > .file-attach-label:focus-within {
+  outline: 2px solid rgba(0,123,255,0.08);
+  outline-offset: 2px;
+}
+
+/* Keep file preview rules intact (no change) */
+.file-preview-container {
+  display: none;
+  margin-top: 8px;
+}
+.file-preview-item {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 6px 8px;
+  border: 1px solid #e6e6e6;
+  border-radius: 6px;
+  background: #fafafa;
+  font-size: 13px;
+  color: #333;
+  vertical-align: middle;
+}
+.file-preview-item .file-name {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  vertical-align: middle;
+}
+.file-preview-item .remove-file-btn {
+  margin-left: 6px;
+  border: 0;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  font-size: 14px;
+  vertical-align: middle;
 }
