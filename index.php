@@ -78,6 +78,8 @@ if (Config::get_safe("version", false)) {
 
 	<link href="static/styles/main.css<?php echo $versionSuffix?>" rel="stylesheet" type="text/css" />
 	<link href="static/styles/<?php echo rawurlencode(Config::get_safe("theme", "theme01")); ?>.css<?php echo $versionSuffix?>" rel="stylesheet" type="text/css" />
+	<!-- Custom overrides for the clickable paperclip & file preview -->
+	<link href="static/styles/custom1.css<?php echo $versionSuffix?>" rel="stylesheet" type="text/css" />
 
 	<link href="https://fonts.googleapis.com/css?family=Open+Sans&amp;subset=all" rel="stylesheet">
 
@@ -119,6 +121,11 @@ if (Config::get_safe("version", false)) {
 		overflow-y: auto !important;
 		resize: none !important; /* No resize, use scrolling instead */
 	}
+	/* small file preview styling (matching image preview look) */
+	.file-preview-container { display:none; margin-top:8px; }
+	.file-preview-item { display:inline-block; margin-right:8px; padding:6px 8px; border:1px solid #e6e6e6; border-radius:6px; background:#fafafa; }
+	.file-preview-item .file-name { display:inline-block; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
+	.file-preview-item .remove-file-btn { margin-left:6px; border:0; background:transparent; color:#888; cursor:pointer; font-size:14px; }
 	</style>
 	<?php echo $styles_html; ?>
 </head>
@@ -233,6 +240,9 @@ if (Config::get_safe("version", false)) {
 							<div class="multi-upload-info" style="display:none;">
 								<span class="image-count"></span>
 							</div>
+
+							<!-- Multi-File Upload Preview Container -->
+							<div class="file-preview-container" style="display:none;"></div>
 							
 						<div class="t_area">
 							<textarea id="postText" class="e_text" placeholder="<?php echo __("What's on your mind?"); ?>"></textarea>
@@ -369,7 +379,17 @@ if (Config::get_safe("version", false)) {
 						</table>
 						<div class="modal-footer">
 							<ul class="options">
+								<!-- image upload (existing) -->
 								<li class="kepet"><a><span><input type="file" accept="image/*" multiple class="photo_upload" name="file"></span></a></li>
+
+								<!-- file upload (new) - INPUT INSIDE LABEL so icon itself is clickable in all browsers -->
+								<li class="file_attach">
+									<label class="file-attach-label" title="<?php echo __("Attach file"); ?>">
+										<input id="file_upload_input" type="file" class="file_upload" name="file" multiple aria-label="<?php echo __("Attach file"); ?>" />
+										<span class="file-icon" aria-hidden="true">📎</span>
+									</label>
+								</li>
+
 								<li class="feeling"><a></a></li>
 								<li class="persons"><a></a></li>
 								<li class="location"><a></a></li>
@@ -502,7 +522,7 @@ if (Config::get_safe("version", false)) {
 		<div id="headline"></div>
 
 		<!-- Trash button below logout (only visible when logged in) -->
-		<div id="trash_headline_btn" style="display:none; max-width: 1000px; margin: 0 auto 20px auto; text-align: right; padding: 0 10px;">
+		<div id="trash_headline_btn" style="display:none; max-width: 1000px; margin: 0 auto 20px auto; text-align: right; background-color: #fff; padding: 0 10px;">
 			<button type="button" class="button gray" id="show_trash_btn" style="padding: 8px 16px; font-size: 14px; display: inline-block;">
 				🗑️ <?php echo __("Show Trash"); ?> <span class="trash-count" style="color: #666; font-weight: bold;"></span>
 			</button>
@@ -560,6 +580,7 @@ if (Config::get_safe("version", false)) {
 <script>
 // ============================================
 // Markdown & Emoji Editor Functionality
+// (unchanged - same as before; the file-upload integration happens in static/scripts/app.js)
 // ============================================
 (function(){
 	'use strict';
